@@ -7,6 +7,7 @@
 </head>
 <body>
 
+
 <header>
     <div>
         LD58 - GameCollector
@@ -16,20 +17,38 @@
         <span class="player-name">???</span>
         <button id="btn-change-user">Change</button>
     </div>
+    <div id="playerGame">
+        <span>Game:</span>
+        <span class="game-name">???</span>
+    </div>
 </header>
 
+
+
 <dialog id="dlg-username" class="dialog">
-    <div>
-        <form>
+    <form class="dialog-wrapper">
+        <div class="content">
             <label>
                 <div>
                     What is your LDJam username?
                 </div>
                 <input name="jamuser" autocomplete="off" type="text"/>
             </label>
+        </div>
+        <div class="buttons">
             <button class="dlg-btn-submit">Submit</button>
             <button class="dlb-btn-cancel">Just Visiting</button>
-        </form>
+        </div>
+    </form>
+</dialog>
+<dialog id="dlg-ok" class="dialog">
+    <div class="dialog-wrapper">
+        <div class="content">
+            What is your LDJam username?
+        </div>
+        <div class="buttons">
+            <button class="dlg-btn-ok">OK</button>
+        </div>
     </div>
 </dialog>
 
