@@ -1,6 +1,6 @@
 import {Models} from "./models";
 import {
-    Clock,
+    // Clock,
     Color, GridHelper,
     PerspectiveCamera,
     Scene,
@@ -13,7 +13,7 @@ export function setupScene()
     // Scene setup
     const scene = new Scene();
     scene.background = new Color(Color.NAMES.red)
-    const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.translateY(100)
     const renderer = new WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -25,8 +25,17 @@ export function setupScene()
     scene.add( grid );
 
     const orbitControls = new OrbitControls(camera, renderer.domElement);
-    orbitControls.update()
+    orbitControls.enableRotate = false
+    orbitControls.enableZoom = true
+    orbitControls.screenSpacePanning = false
+    orbitControls.minAzimuthAngle = 0
+    orbitControls.maxAzimuthAngle = 0
+    orbitControls.minPolarAngle = Math.PI / 8
+    orbitControls.maxPolarAngle = orbitControls.minPolarAngle
+    orbitControls.minDistance = 10
+    orbitControls.maxDistance = 20
     orbitControls.listenToKeyEvents(window)
+    orbitControls.update()
 
     // const material = new MeshBasicMaterial({
     //     color: Color.NAMES.green,
@@ -35,22 +44,17 @@ export function setupScene()
     // plane.rotation.setFromRotationMatrix()
     const cube = Models.Hexagon;
     cube.scale.multiplyScalar(0.06)
+    cube.quaternion.setFromAxisAngle({x: 1, y: 0, z: 0}, Math.PI / 2)
     scene.add(cube);
 
-    camera.position.z = 5;
-
-    let rotationPerSecond = .3
-    let angle = 0
-    const clock = new Clock()
+    //const clock = new Clock()
 
     function animate(): void {
-        const dt = clock.getDelta()
-        requestAnimationFrame(animate);
-
-        angle = (angle + 2 * Math.PI * rotationPerSecond * dt) % (2 * Math.PI)
-        cube.quaternion.setFromAxisAngle({x: 0, y: 1, z: 0}, angle)
+        //const dt = clock.getDelta()
 
         renderer.render(scene, camera);
+
+        requestAnimationFrame(animate);
     }
 
 // Handle window resize
