@@ -1,0 +1,32 @@
+sequenceDiagram
+    actor P as Player
+    participant G as Game
+    participant B4 as Banana4Life
+    participant LD as LDJam
+    P ->> G: Start
+    G ->> P: Request Name
+    alt Voter
+        P ->> G: My name is: <name>
+        G ->> LD: Fetch Active Game
+        LD ->> G: .
+        G ->> B4: Submit Game
+        B4 ->> B4: Persist
+        G ->> P: Request Game Info<br>Is your game embeddable?
+        P ->> G: .
+        G ->> B4: Submit Game Info
+        B4 ->> B4: Persist
+
+    end
+    alt Non-Voter
+        P ->> G: I have no published Game
+
+    end
+
+    G ->> B4: Fetch Random Games
+# TODO can we check if voted on by <user>?
+    B4 ->> G: .
+    G ->> G: Render Bestagons around "your" (orelse random) game
+
+
+    G ->> P: What Overall Score did you give?
+    P ->> G: .
