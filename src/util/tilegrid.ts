@@ -1,4 +1,8 @@
-type Vec3 = [number, number, number]
+interface Vec3 {
+    x: number
+    y: number
+    z: number
+}
 
 
 class CubeCoord {
@@ -51,16 +55,16 @@ class CubeCoord {
     }
 
     toWorld(y: number, size: Vec3): Vec3 {
-        const [sizeX, _, sizeZ] = size
-        return [
-            (CubeCoord.CUBE_TO_WORLD[0] * this.q + CubeCoord.CUBE_TO_WORLD[1] * this.r) * sizeX,
+        const {x: sizeX, z: sizeZ} = size
+        return {
+            x: (CubeCoord.CUBE_TO_WORLD[0] * this.q + CubeCoord.CUBE_TO_WORLD[1] * this.r) * sizeX,
             y,
-            (CubeCoord.CUBE_TO_WORLD[2] * this.q + CubeCoord.CUBE_TO_WORLD[3] * this.r) * sizeZ,
-        ]
+            z: (CubeCoord.CUBE_TO_WORLD[2] * this.q + CubeCoord.CUBE_TO_WORLD[3] * this.r) * sizeZ,
+        }
     }
 
     fromWorld(p: Vec3): CubeCoord {
-        const [x, _, z] = p
+        const {x, z} = p
         return new CubeCoord(
             Math.round(CubeCoord.WORLD_TO_CUBE[0] * x + CubeCoord.WORLD_TO_CUBE[1] * z),
             Math.round(CubeCoord.WORLD_TO_CUBE[2] * x + CubeCoord.WORLD_TO_CUBE[3] * z),
