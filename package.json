@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "publish": "tsc && vite build --base /LD58/"
   },
   "dependencies": {
     "three": "^0.180.0"
