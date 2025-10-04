@@ -50,6 +50,16 @@ canvas {
     }
 }
 
+#player {
+    display: flex;
+    gap: 5px;
+    .game {
+        display: none;
+        &.has-game {
+            display: block;
+        }
+    }
+}
 
 header {
     display: flex;
