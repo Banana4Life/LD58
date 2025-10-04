@@ -37,7 +37,9 @@ export function setupScene()
     scene.background = new Color(Color.NAMES.red)
     const camera = new PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.translateY(100)
-    const renderer = new WebGLRenderer();
+    const renderer = new WebGLRenderer({
+        antialias: true
+    });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
