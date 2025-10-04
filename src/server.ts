@@ -1,4 +1,4 @@
-import {getBackendUrlFor} from "@/util";
+import {getBackendUrlFor} from "./util";
 
 export interface Game {
     id: number,

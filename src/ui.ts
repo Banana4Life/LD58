@@ -1,4 +1,4 @@
-import {findGames, findUserGames} from "@/server.ts";
+import {findGames, findUserGames} from "./server.ts";
 
 const LOCALSTORAGE_USER = "user";
 const JAM_ID = "56";

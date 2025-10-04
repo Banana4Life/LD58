@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {loadHexagon} from "./hexagon";
 
 export function setupScene()
 {
@@ -8,6 +9,8 @@ export function setupScene()
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+
+    loadHexagon(scene)
 
 // Add a cube
     const geometry = new THREE.BoxGeometry();
