@@ -1,13 +1,34 @@
 import {Models} from "./models";
 import {
     AmbientLight,
-    // Clock,
-    Color, GridHelper,
+    Box3,
+    Color,
+    GridHelper,
+    Object3D,
     PerspectiveCamera,
     Scene,
+    Vector3,
     WebGLRenderer
 } from "three";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
+import {CubeCoord} from "./util/tilegrid.ts";
+
+function getSize(obj: Object3D): Vector3 {
+    const bounds = new Box3().setFromObject(obj)
+    const size = new Vector3()
+    bounds.getSize(size)
+    return size
+}
+
+const gridSize = getSize(Models.Hexagon)
+
+function createHex(coord: CubeCoord): Object3D {
+    const hex = Models.Hexagon.clone();
+    hex.quaternion.setFromAxisAngle({x: 1, y: 0, z: 0}, Math.PI / 2);
+    const {x, y, z} = coord.toWorld(0, {x: gridSize.x, y: 0, z: gridSize.y})
+    hex.position.set(x, y, z)
+    return hex
+}
 
 export function setupScene()
 {
@@ -34,10 +55,10 @@ export function setupScene()
     orbitControls.screenSpacePanning = false
     orbitControls.minAzimuthAngle = 0
     orbitControls.maxAzimuthAngle = 0
-    orbitControls.minPolarAngle = Math.PI / 8
+    orbitControls.minPolarAngle = Math.PI / 10
     orbitControls.maxPolarAngle = orbitControls.minPolarAngle
-    orbitControls.minDistance = 10
-    orbitControls.maxDistance = 20
+    orbitControls.minDistance = 100
+    orbitControls.maxDistance = 200
     orbitControls.listenToKeyEvents(window)
     orbitControls.update()
 
@@ -46,10 +67,10 @@ export function setupScene()
     // });
     // const plane = new Mesh(new PlaneGeometry(10, 10), material)
     // plane.rotation.setFromRotationMatrix()
-    const cube = Models.Hexagon;
-    cube.scale.multiplyScalar(0.06)
-    cube.quaternion.setFromAxisAngle({x: 1, y: 0, z: 0}, 0);
-    scene.add(cube);
+    console.log([...CubeCoord.ORIGIN.spiralAround(0, 40)].length)
+    for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 40)) {
+        scene.add(createHex(cubeCoord));
+    }
 
     //const clock = new Clock()
 

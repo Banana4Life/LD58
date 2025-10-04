@@ -1,6 +1,6 @@
 import hexagonFbx from './assets/hexagon.fbx?arraybuffer'
 import {FBXLoader} from "three/examples/jsm/loaders/FBXLoader";
-import {Group, Mesh} from "three";
+import {Group} from "three";
 
 const basePath = new URL(document.location.href).pathname
 
@@ -10,5 +10,5 @@ function loadFbx(content: ArrayBuffer): Group {
 }
 
 export const Models = {
-    Hexagon: loadFbx(hexagonFbx).children[0] as Mesh,
+    Hexagon: loadFbx(hexagonFbx),
 } as const
