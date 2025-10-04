@@ -108,4 +108,28 @@ export class CubeCoord {
             }
         }
     }
+
+    *shuffledRingAround(radius: number): Generator<CubeCoord> {
+        const coords = [...this.ringAround(radius)]
+        shuffleArray(coords)
+
+        for (let coord of coords) {
+            yield coord
+        }
+    }
+
+    *shuffledRingsAround(startRing: number = 0, maxRings: number = -1): Generator<CubeCoord> {
+        for (let i = 0; i < maxRings || maxRings == -1; ++i) {
+            for (const coord of this.shuffledRingAround(startRing + i)) {
+                yield coord
+            }
+        }
+    }
+}
+
+function shuffleArray<T>(array: T[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
 }
