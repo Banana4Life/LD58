@@ -1,5 +1,5 @@
 
-import {getBackendUrlFor} from "@/util.ts";
+import {getBackendUrlFor} from "@/util";
 
 import '@/style.css';
 import {loadUI} from "@/ui.ts";
