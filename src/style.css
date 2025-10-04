@@ -1,0 +1,19 @@
+
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+canvas {
+    display: block;
+}
+
+#dialog-box {
+    background: gray;
+    border: 1px solid blue;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+}

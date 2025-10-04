@@ -4,17 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LD58 - Three.js Project</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
-        canvas {
-            display: block;
-        }
-    </style>
 </head>
 <body>
-    <script type="module" src="/src/main.ts"></script>
+
+<header>
+    <div>
+        LD58 - GameCollector
+    </div>
+    <div id="player">
+        <span>Player:</span>
+        <span class="player-name">???</span>
+        <button id="btn-change-user">Change</button>
+    </div>
+</header>
+
+<dialog id="dlg-username" class="dialog">
+    <div>
+        <form>
+            <label>
+                <div>
+                    What is your LDJam username?
+                </div>
+                <input name="jamuser" autocomplete="off" type="text"/>
+            </label>
+            <button class="dlg-btn-submit">Submit</button>
+            <button class="dlb-btn-cancel">Just Visiting</button>
+        </form>
+    </div>
+</dialog>
+
+
+<script type="module" src="/src/main.ts"></script>
+
 </body>
 </html>
