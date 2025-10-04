@@ -1,5 +1,6 @@
 import {Models} from "./models";
 import {
+    AmbientLight,
     // Clock,
     Color, GridHelper,
     PerspectiveCamera,
@@ -24,6 +25,9 @@ export function setupScene()
     grid.material.transparent = true;
     scene.add( grid );
 
+    const light = new AmbientLight(Color.NAMES.white, 5.0)
+    scene.add(light)
+
     const orbitControls = new OrbitControls(camera, renderer.domElement);
     orbitControls.enableRotate = false
     orbitControls.enableZoom = true
@@ -44,7 +48,7 @@ export function setupScene()
     // plane.rotation.setFromRotationMatrix()
     const cube = Models.Hexagon;
     cube.scale.multiplyScalar(0.06)
-    cube.quaternion.setFromAxisAngle({x: 1, y: 0, z: 0}, Math.PI / 2)
+    cube.quaternion.setFromAxisAngle({x: 1, y: 0, z: 0}, 0);
     scene.add(cube);
 
     //const clock = new Clock()
