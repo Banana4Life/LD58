@@ -8,3 +8,10 @@ export function getBackendUrl(): URL {
     }
     return defaultBackendUrl
 }
+
+export function getBackendUrlFor(path: string): URL {
+    const backendUrl = getBackendUrl()
+    const prefix = backendUrl.pathname.replace(/\/$/, '')
+    backendUrl.pathname = prefix + path
+    return backendUrl
+}

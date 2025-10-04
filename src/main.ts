@@ -1,9 +1,7 @@
 import * as THREE from 'three';
-import { getBackendUrl } from "@/util.ts";
+import {getBackendUrlFor} from "@/util.ts";
 
-const backendUrl = getBackendUrl()
-
-fetch(backendUrl).then()
+fetch(getBackendUrlFor('/ld58/stats')).then(r => r.json()).then(r => console.log('received', r))
 
 // Scene setup
 const scene = new THREE.Scene();
