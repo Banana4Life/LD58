@@ -1,8 +1,7 @@
-import {findGames, findUserGames, GameInfo, getHexgrid, postHexGridGame} from "./server.ts";
-import {CubeCoord} from "./util/tilegrid.ts";
+import { findUserGames, GameInfo} from "./server.ts";
+import { JAM_NAME,  storage} from "./storage.ts";
 
 const LOCALSTORAGE_USER = "user";
-const JAM_NAME = "56";
 
 let dlgUserName = document.querySelector<HTMLDialogElement>("#dlg-username")!;
 dlgUserName.querySelector("form")?.addEventListener("submit", saveUserName)
@@ -19,7 +18,6 @@ dlgOk.querySelector(".dlg-btn-ok")?.addEventListener("click", () => {
     }
 })
 
-let GAMES_MAPPING = new Map<number, GameInfo>();
 
 let playerNamePlate = document.querySelector("#player")!;
 let btnChangeUser = document.querySelector("#btn-change-user")!;
@@ -28,14 +26,15 @@ btnChangeUser.addEventListener("click", openUsernameDialog)
 
 
 async function updateNamePlate(user: string) {
-    console.log("update player name plate", user)
+    console.log("Welcome", user)
     playerNamePlate.querySelector(".player-name")!.textContent = user;
 
     let game = await findUserGames(JAM_NAME, user)
     playerNamePlate.querySelector(".game")!.classList.remove("has-game");
+
     if (game.games.length === 0) {
-        let cnt = 420;
-        openOkDialog(`Did you know there are exactly ${cnt} games submitted for LD${JAM_NAME}?`, () => {})
+
+        openOkDialog(`Did you know there are exactly ${storage.gameCount()} games submitted for LD${JAM_NAME}?`, () => {})
         // TODO fun fact?
         // # of game submissions
         // # of compo games
@@ -53,8 +52,33 @@ async function updateNamePlate(user: string) {
             playerNamePlate.querySelector(".game")!.classList.add("has-game");
         }
 
+        if (game.current) {
+            let coord = storage.gameCoordById(game.current.id);
+            if (!coord) {
+                await attemptPlacingGame(game.current.id);
+
+                // TODO teleport to
+            } else {
+                console.log(user, "your game", game.current.id, "is already placed @", coord)
+            }
+        }
+
 
     }
+}
+
+async function attemptPlacingGame(gameId: number, i: number = 0) {
+    let coord = storage.nextFreeCoord(); // TODO shuffled rings
+    let result = await storage.setGame(coord, gameId)
+    if (result === gameId) {
+        return
+    }
+    if (i < 20) {
+        await attemptPlacingGame(gameId, i + 1)
+    } else {
+        console.error("Could not place game", gameId, "in", i, "tries")
+    }
+
 }
 
 function askEmbedd(current: GameInfo | null) {
@@ -78,18 +102,6 @@ export async function loadUI() {
     } else {
         updateNamePlate(user);
     }
-
-    let games = await findGames(JAM_NAME);
-    games.games.forEach(g => GAMES_MAPPING.set(g.id, g));
-    console.log(games.games.length, "games found for LD", JAM_NAME)
-    console.log("grading enabled:", games["can-grade"])
-
-
-    await postHexGridGame(new CubeCoord(0, 0), 403641)
-
-
-    let hexGrid = await getHexgrid(JAM_NAME)
-    console.log("HexGrid is", hexGrid)
 }
 
 function openUsernameDialog() {

@@ -39,7 +39,7 @@ export async function findGames(jam: string) {
         .then(r => r as JamGames)
 }
 
-export async function getHexgrid(jam: string): Promise<Map<CubeCoord, number>> {
+export async function fetchHexGrid(jam: string): Promise<Map<CubeCoord, number>> {
     let url = getBackendUrlFor(`/ld58/hexGrid`) + `?jam=${jam}`
     console.log("GET", url)
 
@@ -61,11 +61,11 @@ export async function getHexgrid(jam: string): Promise<Map<CubeCoord, number>> {
 
 }
 
-export async function postHexGridGame(coord: CubeCoord, gameId: number): Promise<void> {
+export async function postHexGridGame(coord: CubeCoord, gameId: number): Promise<number> {
     let url = getBackendUrlFor(`/ld58/hexGrid`) + `?q=${coord.q}&r=${coord.r}&gameId=${gameId}`
     console.log("POST", url)
     return fetch(url, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-    }).then((r) => console.log("POST HexGridGame", r.text()))
+    }).then((r) => r.json())
 }
