@@ -15,7 +15,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["vite-plugin-arraybuffer/types"]
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
