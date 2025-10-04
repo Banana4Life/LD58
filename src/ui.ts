@@ -1,6 +1,7 @@
-import {findGame} from "@/server.ts";
+import {findGames, findUserGames} from "@/server.ts";
 
 const LOCALSTORAGE_USER = "user";
+const JAM_ID = "56";
 
 let userNameDlg = document.querySelector<HTMLDialogElement>("#dlg-username")!;
 let playerNamePlate = document.querySelector("#player")!;
@@ -8,10 +9,11 @@ let btnChangeUser = document.querySelector("#btn-change-user")!;
 
 btnChangeUser.addEventListener("click", openUsernameDialog)
 
-async function updatePlate(user: string) {
+
+async function updateNamePlate(user: string) {
     playerNamePlate.querySelector(".player-name")!.textContent = user;
 
-    let game = await findGame(user)
+    let game = await findUserGames(JAM_ID, user)
     if (game.length === 0) {
         // TODO fun fact?
         // # of game submissions
@@ -21,19 +23,21 @@ async function updatePlate(user: string) {
     } else {
         const randomIndex = Math.floor(Math.random() * game.length);
         const randomGame = game[randomIndex];
-        alert(`Does ${randomGame.name} ring a bell? Good.`)
+        console.log(`Does ${randomGame.name} ring a bell? Good.`, randomGame)
     }
-
-
 }
 
-export function loadUI() {
+export async function loadUI() {
     let user = localStorage.getItem(LOCALSTORAGE_USER);
     if (user === null || user === "") {
         openUsernameDialog()
     } else {
-        updatePlate(user);
+        updateNamePlate(user);
     }
+
+    let games = await findGames(JAM_ID);
+    console.log(games.games.length, "games found for LD", JAM_ID)
+    console.log("grading enabled:", games["can-grade"])
 
 }
 
@@ -50,10 +54,10 @@ function saveUserName(e: SubmitEvent) {
         const input = form.querySelector("input") as HTMLInputElement;
         const userName = input.value;
         localStorage.setItem(LOCALSTORAGE_USER, userName)
-        updatePlate(userName)
+        updateNamePlate(userName)
     } else {
         localStorage.removeItem(LOCALSTORAGE_USER);
-        updatePlate("???")
+        updateNamePlate("???")
     }
     userNameDlg.close()
 }
