@@ -1,0 +1,22 @@
+{
+  "name": "ld58-threejs",
+  "version": "1.0.0",
+  "description": "Ludum Dare 58 - Three.js Project",
+  "main": "src/main.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.2",
+    "@types/three": "^0.180.0",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  }
+}
