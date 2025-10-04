@@ -6,7 +6,7 @@ export function getBackendUrl(): URL {
     if (backendUrl) {
         return new URL(backendUrl)
     }
-    return defaultBackendUrl
+    return new URL(defaultBackendUrl)
 }
 
 export function getBackendUrlFor(path: string): URL {
