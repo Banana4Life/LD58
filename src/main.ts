@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { getBackendUrl } from "@/util.ts";
 
 const backendUrl = getBackendUrl()
 
@@ -13,9 +14,9 @@ document.body.appendChild(renderer.domElement);
 
 // Add a cube
 const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshBasicMaterial({ 
-  color: 0x00ff00, 
-  wireframe: true 
+const material = new THREE.MeshBasicMaterial({
+  color: 0x00ff00,
+  wireframe: true
 });
 const cube = new THREE.Mesh(geometry, material);
 scene.add(cube);
@@ -25,10 +26,10 @@ camera.position.z = 5;
 // Animation loop
 function animate(): void {
   requestAnimationFrame(animate);
-  
+
   cube.rotation.x += 0.01;
   cube.rotation.y += 0.01;
-  
+
   renderer.render(scene, camera);
 }
 
