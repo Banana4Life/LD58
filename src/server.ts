@@ -1,4 +1,4 @@
-import {getBackendUrlFor} from "@/util.ts";
+import {getBackendUrlFor} from "@/util";
 
 export type Game = {
     id: number,
