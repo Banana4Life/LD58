@@ -1,5 +1,6 @@
 import {Models} from "./models";
 import {
+    AudioListener,
     Box3,
     Clock,
     Color,
@@ -25,9 +26,9 @@ import {
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {CubeCoord} from "./util/tilegrid.ts";
 import {coordToKey, storage} from "./storage.ts";
-import {damp} from "three/src/math/MathUtils";
 import {ui} from "./ui.ts";
 import {Textures} from "./textures.ts";
+import {Sounds} from "./sounds.ts";
 
 function getSize(obj: Object3D): Vector3 {
     const bounds = new Box3().setFromObject(obj)
@@ -40,23 +41,28 @@ const HEX_GRID_OBJ = new Map<string, Object3D>()
 
 const gridSize = getSize(Models.Hexagon.object)
 
-function setTexture(mesh: Mesh, names: string[], texture: Texture, tint: ColorRepresentation) {
+function setTexture(mesh: Mesh, names: string[], texture: Texture | null, tint: ColorRepresentation, shininess: number) {
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
     for (let i = 0; i < materials.length; i++){
         let material = materials[i];
         if (names.indexOf(material.name) !== -1) {
             if (material instanceof MeshPhongMaterial) {
                 const copy = material.clone()
-                copy.map = texture
+                if (texture) {
+                    copy.map = texture
+                }
                 copy.color = new Color(tint)
                 copy.specular = new Color(tint)
-                copy.shininess = 20
+                copy.blendColor = new Color(tint)
+                copy.shininess = shininess
                 copy.flatShading = true
                 copy.needsUpdate = true
                 materials[i] = copy
             } else if (material instanceof MeshLambertMaterial) {
                 const copy = material.clone()
-                copy.map = texture
+                if (texture) {
+                    copy.map = texture
+                }
                 copy.color = new Color(tint)
                 copy.needsUpdate = true
                 materials[i] = copy
@@ -69,7 +75,8 @@ interface TileObjectData {
     readonly coord: CubeCoord
     readonly targetLevel: number
     readonly initialLevel: number
-    readonly textureLoaded: Promise<Texture>
+    readonly textureLoaded: Promise<void>
+    readonly fallDuration?: number
 }
 
 function isTileObjectData(data: any): data is TileObjectData {
@@ -83,26 +90,35 @@ function asTileObjectData(data: any): TileObjectData | undefined {
     return undefined
 }
 
-function setCoverImage(obj: Object3D, textureLoader: TextureLoader, _coverUrl: string | null): Promise<Texture> {
-    const coverUrl = !!_coverUrl ? _coverUrl : "https://banana4.life/ld58/imageProxy/aHR0cHM6Ly9zdGF0aWMuamFtLmhvc3QvY29udGVudC82MjEvei8xNzRmZi5qcGcuNDgweDM4NC5maXQuanBn.404186b38e0e43ab2456896b32af2f1668556ab8"
+function setCoverImage(obj: Object3D, textureLoader: TextureLoader, coverUrl: string | null): Promise<void> {
     const childMesh = obj.children[0] as Mesh
-    return new Promise(resolve => {
-        textureLoader.load(coverUrl, (t) => {
-            t.anisotropy = 16
-            setTexture(childMesh, ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"], t, Color.NAMES.white)
-            resolve(t)
+    let targetMaterials = ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"];
+    if (coverUrl) {
+        return new Promise(resolve => {
+            const cachableUrl = new URL(coverUrl)
+            cachableUrl.searchParams.set("cacheKey", "2025-10-05")
+            textureLoader.load(cachableUrl.toString(), (t) => {
+                t.anisotropy = 16
+                setTexture(childMesh, targetMaterials, t, Color.NAMES.white, 20)
+                resolve()
+            })
         })
-    })
+    } else {
+        setTexture(childMesh, targetMaterials, null, Color.NAMES.grey, 200)
+        return Promise.resolve()
+    }
 }
 
-function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null, fallFrom: number): Object3D {
+function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null, fallFrom: number, fallDuration?: number): Object3D {
     const hex = Models.Hexagon.object.clone(true);
     const targetLevel = 0
+    // noinspection UnnecessaryLocalVariableJS
     const data: TileObjectData = {
         coord,
         targetLevel: targetLevel,
         initialLevel: fallFrom,
-        textureLoaded: setCoverImage(hex, textureLoader, coverUrl)
+        textureLoaded: setCoverImage(hex, textureLoader, coverUrl),
+        fallDuration,
     }
     hex.userData = data
 
@@ -112,44 +128,69 @@ function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: str
     return hex
 }
 
-function tileSpawner(scene: Scene, tilesPerSecond: number, fallDampening: number): [(dt: DOMHighResTimeStamp) => void, (obj: Object3D, next?: boolean) => Promise<void>] {
+function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number = 2): [(dt: DOMHighResTimeStamp) => void, (obj: Object3D, next?: boolean) => Promise<void>] {
+
+    function initialSpeed(acceleration: number, height: number, durationSeconds: number): number {
+        return -((acceleration * durationSeconds / 2) - ((height / durationSeconds)))
+    }
+
+    interface FallingState {
+        resolve(): void
+        fallingTime: number
+        fallDuration: number
+        speed: number
+    }
+
     let tileDelay = 1/tilesPerSecond
     const tileQueue: [Object3D, () => void][] = []
 
-    const falling = new Map<number, () => void>()
-    const epsilon = 0.05
+    const falling = new Map<number, FallingState>()
+    const epsilon = 0.02
+
+    const g = 10
 
     const update = (dt: DOMHighResTimeStamp) => {
-        for (let [id, resolve] of falling) {
+        for (let [id, state] of falling) {
             const obj = scene.getObjectById(id)
             if (!obj) {
                 falling.delete(id)
-                resolve()
+                state.resolve()
                 continue
             }
             const userData = obj.userData
             if (!isTileObjectData(userData)) {
                 falling.delete(id)
-                resolve()
+                state.resolve()
                 continue
             }
             if (obj.position.y - epsilon <= userData.targetLevel) {
                 obj.position.setY(userData.targetLevel)
                 falling.delete(id)
-                resolve()
+                state.resolve()
                 continue
             }
 
 
-            //obj.position.setY(lerp(userData.initialLevel, userData.targetLevel, smootherstep(userData.fallingTime, 0, fallDuration)))
-            obj.position.setY(damp(obj.position.y, userData.targetLevel, fallDampening, dt))
+            // obj.position.setY(lerp(userData.initialLevel, userData.targetLevel, smootherstep(state.fallingTime, 0, fallDuration)))
+            // obj.position.setY(Math.max(0, lerp(userData.initialLevel, userData.targetLevel, state.fallingTime / state.fallDuration)))
+            // obj.position.setY(damp(obj.position.y, userData.targetLevel, fallDuration, dt))
+            console.log(obj.position.y)
+            obj.position.setY(Math.max(0, obj.position.y - (state.speed * dt)))
+            state.speed += g * dt
+            state.fallingTime += dt
         }
 
         if (tileDelay <= 0) {
             const item = tileQueue.shift()
             if (item) {
                 const [queuedTile, resolve] = item
-                falling.set(queuedTile.id, resolve)
+                const t = asTileObjectData(queuedTile.userData)?.fallDuration ?? fallDuration
+                falling.set(queuedTile.id, {
+                    resolve,
+                    fallingTime: 0,
+                    fallDuration: asTileObjectData(queuedTile.userData)?.fallDuration ?? fallDuration,
+                    speed: initialSpeed(g, queuedTile.position.y, t),
+                })
                 scene.add(queuedTile)
             }
             tileDelay = 1/tilesPerSecond
@@ -192,13 +233,15 @@ export async function setupScene()
     const renderer = new WebGLRenderer({
         antialias: true
     });
+    const audioListener = new AudioListener()
+    scene.add(audioListener)
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
     // const light = new AmbientLight(Color.NAMES.white, 5.0)
     // const light = new DirectionalLight(Color.NAMES.white, 0.5)
     scene.add(new DirectionalLight(Color.NAMES.white, 0.05))
-    const light = new HemisphereLight( Color.NAMES.white, 0x00ff00, 1 );
+    const light = new HemisphereLight( Color.NAMES.white, Color.NAMES.white, 1);
     scene.add(light)
 
     const orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -225,18 +268,20 @@ export async function setupScene()
     backgroundMesh.position.set(0, 0, -100)
     scene.add(backgroundMesh)
 
-    const [spawnTiles, enqueueTile] = tileSpawner(scene, 10, 4)
+    const [spawnTiles, enqueueTile] = tileSpawner(scene, 10)
 
     // const material = new MeshBasicMaterial({
     //     color: Color.NAMES.green,
     // });
     // const plane = new Mesh(new PlaneGeometry(10, 10), material)
     // plane.rotation.setFromRotationMatrix()
+    const camWorldPos = new Vector3()
+    camera.getWorldPosition(camWorldPos)
     const serverGrid = await storage.hexGrid()
     for (let cubeCoord of CubeCoord.ORIGIN.shuffledRingsAround(0, 6)) {
         const gameId = serverGrid.get(coordToKey(cubeCoord))
         const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
-        let hexObj = createHex(cubeCoord, textureLoader, coverUrl, 100);
+        let hexObj = createHex(cubeCoord, textureLoader, coverUrl, camWorldPos.y, 0.6);
         HEX_GRID_OBJ.set(coordToKey(cubeCoord), hexObj)
         enqueueTile(hexObj);
     }
@@ -255,11 +300,15 @@ export async function setupScene()
                         } else {
                             const info = await storage.placeNextGameAt(data.coord)
                             if (info && info.cover) {
-                                const newObj = createHex(data.coord, textureLoader, info?.cover, 100)
+                                const newObj = createHex(data.coord, textureLoader, info?.cover, camWorldPos.y, 1)
                                 asTileObjectData(newObj.userData)
                                     ?.textureLoaded
-                                    ?.then(() => enqueueTile(newObj, true))
-                                    ?.then(() => parent.removeFromParent())
+                                    ?.then(() => Sounds.DropSlap.prepare(audioListener))
+                                ?.then(play => enqueueTile(newObj, true).then(() => play))
+                                    ?.then(play => {
+                                    play()
+                                    parent.removeFromParent()
+                                })
                             }
                         }
                         break
