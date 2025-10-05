@@ -30,6 +30,8 @@ import {ui} from "./ui.ts";
 import {Textures} from "./textures.ts";
 import {Sounds} from "./sounds.ts";
 
+const selectedHeight = 10
+
 function getSize(obj: Object3D): Vector3 {
     const bounds = new Box3().setFromObject(obj)
     const size = new Vector3()
@@ -109,13 +111,12 @@ function setCoverImage(obj: Object3D, textureLoader: TextureLoader, coverUrl: st
     }
 }
 
-function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null, fallFrom: number, fallDuration?: number): Object3D {
+function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null, fallFrom: number, fallDuration?: number, initialLevel: number = 0): Object3D {
     const hex = Models.Hexagon.object.clone(true);
-    const targetLevel = 0
     // noinspection UnnecessaryLocalVariableJS
     const data: TileObjectData = {
         coord,
-        targetLevel: targetLevel,
+        targetLevel: initialLevel,
         initialLevel: fallFrom,
         textureLoaded: setCoverImage(hex, textureLoader, coverUrl),
         fallDuration,
@@ -279,6 +280,30 @@ function setupLight(scene: Scene, camera: Camera) {
 
 }
 
+let currentTile: Object3D | undefined = undefined
+function selectTile(tile: Object3D, gameAt: number, isNewTile: boolean = false) {
+    if (currentTile === tile) {
+        unselectCurrentTile()
+        return
+    }
+
+    unselectCurrentTile()
+
+    currentTile = tile
+    if (!isNewTile) {
+        tile.position.y += selectedHeight
+    }
+    ui.openGameInfo(gameAt)
+}
+
+function unselectCurrentTile() {
+    if (currentTile){
+        currentTile.position.y -= selectedHeight
+        ui.closeGameInfo()
+        currentTile = undefined
+    }
+}
+
 export async function setupScene()
 {
     const pointer = new Vector2()
@@ -336,11 +361,12 @@ export async function setupScene()
                     if (isTileObjectData(data)) {
                         let gameAt = storage.gameAt(data.coord);
                         if (gameAt) {
-                            ui.openGameInfo(gameAt)
+                            selectTile(parent, gameAt)
                         } else {
                             const info = await storage.placeNextGameAt(data.coord)
                             if (info && info.cover) {
-                                const newObj = createHex(data.coord, textureLoader, info?.cover, camWorldPos.y, 1)
+                                unselectCurrentTile()
+                                const newObj = createHex(data.coord, textureLoader, info?.cover, camWorldPos.y, 1, selectedHeight)
                                 asTileObjectData(newObj.userData)
                                     ?.textureLoaded
                                     ?.then(() => Sounds.DropSlap.prepare(audioListener))
@@ -348,6 +374,10 @@ export async function setupScene()
                                     ?.then(play => {
                                     play()
                                     parent.removeFromParent()
+                                    gameAt = storage.gameAt(data.coord);
+                                    if (gameAt) {
+                                        selectTile(newObj, gameAt, true)
+                                    }
                                 })
                             }
                         }

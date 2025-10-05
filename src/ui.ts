@@ -282,6 +282,10 @@ function openGameInfo(gameId: number) {
 
 }
 
+function closeGameInfo() {
+    dlgGame.close()
+}
+
 function openWebGame(url: string | undefined) {
     let popupWindow: Window | null = null;
     if (url) {
@@ -356,5 +360,6 @@ function openQuestion(question: string, yesCb: (() => void) | null, noCb: (() =>
 
 
 export let ui = {
-    openGameInfo
+    openGameInfo,
+    closeGameInfo
 } as const
