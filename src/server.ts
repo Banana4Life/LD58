@@ -25,7 +25,7 @@ export interface JamStats {
 }
 
 export async function findUserGames(jam: string, username: string): Promise<UserGames> {
-    if (username === "???") {
+    if (username === "Guest") {
         return Promise.resolve({current: null, games: []})
     }
     let url = getBackendUrlFor(`/ld58/userGame`) + `?username=${username}&jam=${jam}`

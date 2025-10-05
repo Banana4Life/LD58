@@ -33,18 +33,26 @@ async function updateNamePlate(user: string) {
     playerNamePlate.querySelector(".game")!.classList.remove("has-game");
 
     if (game.games.length === 0) {
-
-        openOkDialog(`Did you know there are exactly ${storage.gameCount()} games submitted for LD${JAM_NAME}?`, () => {})
-        // TODO fun fact?
-        // # of game submissions
-        // # of compo games
-        // etc
+        const dialogs = [
+            `Did you know there are exactly ${storage.stats()?.published} games submitted for LD${JAM_NAME}?`,
+            `Did you know there are ${storage.stats()?.signups} signups with ${storage.stats()?.authors} authors for LD${JAM_NAME}?`,
+            `Sadly ${storage.stats()?.unpublished} games were not published for LD${JAM_NAME}.`,
+        ];
+        const randomIndex = Math.floor(Math.random() * dialogs.length);
+        const randomDialog = dialogs[randomIndex];
+        openOkDialog(randomDialog, () => {});
 
     } else {
         const randomIndex = Math.floor(Math.random() * game.games.length);
         const randomGame = game.games[randomIndex];
 
-        // openOkDialog(`Does ${randomGame.name} ring a bell? Good.`, () => askEmbedd(game.current))
+        if (localStorage.getItem("bells") !== user) {
+            openOkDialog(`Does ${randomGame.name} ring a bell? Good.`, () => {
+                localStorage.setItem("bells", user)
+                askEmbedd(game.current)
+            })
+        }
+
         let currentGameName = game.current?.name;
         playerNamePlate.querySelector(".game-name")!.textContent = currentGameName || ""
         playerNamePlate.querySelector(".game")
@@ -61,6 +69,8 @@ async function updateNamePlate(user: string) {
             } else {
                 console.log(user, "your game", game.current.id, "is already placed @", coord)
             }
+        } else {
+            console.log(user, "You have no game")
         }
 
 
@@ -108,7 +118,7 @@ function saveUserName(e: SubmitEvent) {
         updateNamePlate(userName)
     } else {
         localStorage.removeItem(LOCALSTORAGE_USER);
-        updateNamePlate("???")
+        updateNamePlate("Guest")
     }
     dlgUserName.close()
 }

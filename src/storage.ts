@@ -70,8 +70,8 @@ async function hexGrid(): Promise<Map<string, number>> {
         let serverGrid = await fetchHexGrid(JAM_NAME)
         serverGrid.forEach((v, k) => HEX_GRID.set(k, v))
         serverGrid.forEach((v, k) => COORD_BY_GAMEID.set(v, k))
-        console.log("Initial HexGrid is:")
-        console.table(HEX_GRID)
+        // console.log("Initial HexGrid is:")
+        // console.table(HEX_GRID)
     }
     return HEX_GRID
 }
@@ -127,7 +127,7 @@ async function attemptPlacingGame(gameId: number, i: number = 0) {
 
 export let storage = {
     init,
-    gameCount: () => JAM_STATS?.published,
+    stats: () => JAM_STATS,
     placeNextGameAt,
     gameCoordById,
     attemptPlacingGame,
