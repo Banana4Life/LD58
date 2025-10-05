@@ -1,4 +1,4 @@
-import {findUserGames, GameInfo, server} from "./server.ts";
+import {findUserGames, GameInfo} from "./server.ts";
 import {JAM_NAME, storage} from "./storage.ts";
 import fullStar from './assets/full-star.svg';
 import halfStar from './assets/half-star.svg';
