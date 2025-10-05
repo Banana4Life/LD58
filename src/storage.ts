@@ -2,8 +2,9 @@ import {CubeCoord} from "./util/tilegrid.ts";
 import {fetchHexGrid, fetchJamStats, findGames, GameInfo, JamStats, postHexGridGame} from "./server.ts";
 import {scene} from "./scene.ts";
 import {TextureLoader} from "three";
+import {getJam} from "./util";
 
-export const JAM_NAME = "58";
+export const JAM_NAME = getJam();
 
 const HEX_GRID = new Map<string, number>
 const COORD_BY_GAMEID = new Map<number, string>
