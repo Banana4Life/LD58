@@ -7,11 +7,14 @@ import {
     DirectionalLight,
     HemisphereLight,
     Mesh,
+    MeshBasicMaterial,
     MeshLambertMaterial,
     MeshPhongMaterial,
     Object3D,
     PerspectiveCamera,
+    PlaneGeometry,
     Raycaster,
+    RepeatWrapping,
     Scene,
     Texture,
     TextureLoader,
@@ -24,6 +27,7 @@ import {CubeCoord} from "./util/tilegrid.ts";
 import {coordToKey, storage} from "./storage.ts";
 import {damp} from "three/src/math/MathUtils";
 import {ui} from "./ui.ts";
+import {Textures} from "./textures.ts";
 
 function getSize(obj: Object3D): Vector3 {
     const bounds = new Box3().setFromObject(obj)
@@ -182,7 +186,7 @@ export async function setupScene()
     const textureLoader = new TextureLoader()
     // Scene setup
     const scene = new Scene();
-    scene.background = new Color(Color.NAMES.red)
+    scene.background = new Color(Color.NAMES.hotpink)
     const camera = new PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.translateY(100)
     const renderer = new WebGLRenderer({
@@ -209,6 +213,17 @@ export async function setupScene()
     orbitControls.maxDistance = 200
     orbitControls.listenToKeyEvents(window)
     orbitControls.update()
+
+    const backgroundTexture = Textures.Background.clone()
+    backgroundTexture.wrapS = RepeatWrapping;
+    backgroundTexture.wrapT = RepeatWrapping;
+    backgroundTexture.repeat.set(3, 3);
+    const backgroundPlane = new PlaneGeometry(window.innerWidth, window.innerHeight)
+    const backgroundPlaneMaterial = new MeshBasicMaterial({map: backgroundTexture, color: Color.NAMES.white})
+    const backgroundMesh = new Mesh(backgroundPlane, backgroundPlaneMaterial)
+    backgroundMesh.rotateX(-Math.PI/2)
+    backgroundMesh.position.set(0, 0, -100)
+    scene.add(backgroundMesh)
 
     const [spawnTiles, enqueueTile] = tileSpawner(scene, 10, 4)
 
@@ -254,14 +269,25 @@ export async function setupScene()
         }
     })
 
-
+    const previousCameraPosition = camera.position.clone()
     const clock = new Clock()
     function animate(): void {
         const dt = clock.getDelta()
 
-
         spawnTiles(dt)
         raycaster.setFromCamera( pointer, camera );
+
+        backgroundMesh.position.x = camera.position.x
+        backgroundMesh.position.z = camera.position.z
+
+        const deltaX = previousCameraPosition.x - camera.position.x
+        const deltaZ = camera.position.z - previousCameraPosition.z
+
+        backgroundTexture.offset.x -= deltaX * (backgroundTexture.repeat.x / backgroundPlane.parameters.width)
+        backgroundTexture.offset.y -= deltaZ * (backgroundTexture.repeat.y / backgroundPlane.parameters.height)
+
+        previousCameraPosition.copy(camera.position)
+
         renderer.render(scene, camera);
 
         requestAnimationFrame(animate);
