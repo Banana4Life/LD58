@@ -5,8 +5,8 @@ export interface GameInfo {
     id: number,
     jamId: number,
     name: string,
-    cover: string,
-    web: string,
+    cover: string | null,
+    web: string | null,
     cool: number
 }
 
@@ -47,25 +47,13 @@ export async function findGames(jam: string) {
         .then(r => r as GameInfo[])
 }
 
-export async function fetchHexGrid(jam: string): Promise<Map<CubeCoord, number>> {
+export async function fetchHexGrid(jam: string): Promise<Map<string, number>> {
     let url = getBackendUrlFor(`/ld58/hexGrid`) + `?jam=${jam}`
     console.log("GET", url)
 
-    function cubecoordFrom(key: String) {
-        const [q, r] = key.split(":").map(Number);
-        return new CubeCoord(q, r);
-    }
-
     return fetch(url)
         .then(r => r.json())
-        .then(r => r as Map<String, number>)
-        .then(r => {
-            let entries = Array.from(Object.entries(r))
-            let mapped = entries.map(([key, value]) => {
-                return [cubecoordFrom(key), value] as [CubeCoord, number]
-            });
-            return new Map<CubeCoord, number>(mapped)
-        })
+        .then(r => new Map<string, number>(Object.entries(r)))
 
 }
 

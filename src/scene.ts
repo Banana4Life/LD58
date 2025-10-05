@@ -2,7 +2,7 @@ import {Models} from "./models";
 import {
     Box3,
     Color, ColorRepresentation, DirectionalLight,
-    GridHelper, HemisphereLight, Mesh, MeshLambertMaterial, MeshPhongMaterial,
+    HemisphereLight, Mesh, MeshLambertMaterial, MeshPhongMaterial,
     Object3D,
     PerspectiveCamera, Quaternion,
     Scene, Texture, TextureLoader,
@@ -11,6 +11,7 @@ import {
 } from "three";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {CubeCoord} from "./util/tilegrid.ts";
+import {coordToKey, storage} from "./storage.ts";
 
 function getSize(obj: Object3D): Vector3 {
     const bounds = new Box3().setFromObject(obj)
@@ -23,29 +24,35 @@ const gridSize = getSize(Models.Hexagon)
 
 function setTexture(mesh: Mesh, names: string[], texture: Texture, tint: ColorRepresentation) {
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-    for (let material of materials) {
+    for (let i = 0; i < materials.length; i++){
+        let material = materials[i];
         if (names.indexOf(material.name) !== -1) {
             if (material instanceof MeshPhongMaterial) {
-                material.map = texture
-                material.color = new Color(tint)
-                material.specular = new Color(tint)
-                material.shininess = 20
-                material.flatShading = true
-                material.needsUpdate = true
+                const copy = material.clone()
+                copy.map = texture
+                copy.color = new Color(tint)
+                copy.specular = new Color(tint)
+                copy.shininess = 20
+                copy.flatShading = true
+                copy.needsUpdate = true
+                materials[i] = copy
             } else if (material instanceof MeshLambertMaterial) {
-                material.map = texture
-                material.color = new Color(tint)
-                material.needsUpdate = true
+                const copy = material.clone()
+                copy.map = texture
+                copy.color = new Color(tint)
+                copy.needsUpdate = true
+                materials[i] = copy
             }
         }
     }
 }
 
-function createHex(coord: CubeCoord, textureLoader: TextureLoader): Object3D {
-    const hex = Models.Hexagon.clone();
+function createHex(coord: CubeCoord, textureLoader: TextureLoader, _coverUrl: string | null): Object3D {
+    const hex = Models.Hexagon.clone(true);
 
+    const coverUrl = !!_coverUrl ? _coverUrl : "https://banana4.life/ld58/imageProxy/aHR0cHM6Ly9zdGF0aWMuamFtLmhvc3QvY29udGVudC82MjEvei8xNzRmZi5qcGcuNDgweDM4NC5maXQuanBn.404186b38e0e43ab2456896b32af2f1668556ab8"
     const childMesh = hex.children[0] as Mesh
-    const texture = textureLoader.load("https://banana4.life/ld58/imageProxy/aHR0cHM6Ly9zdGF0aWMuamFtLmhvc3QvY29udGVudC82MjEvei8xNzRmZi5qcGcuNDgweDM4NC5maXQuanBn.404186b38e0e43ab2456896b32af2f1668556ab8", (t) => {
+    const texture = textureLoader.load(coverUrl, (t) => {
         t.anisotropy = 16
     })
     setTexture(childMesh, ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"], texture, Color.NAMES.white)
@@ -60,7 +67,7 @@ function createHex(coord: CubeCoord, textureLoader: TextureLoader): Object3D {
     return hex
 }
 
-export function setupScene()
+export async function setupScene()
 {
     const textureLoader = new TextureLoader()
     // Scene setup
@@ -73,11 +80,6 @@ export function setupScene()
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-
-    const grid = new GridHelper(2000, 20, 0x000000, 0x000000)
-    grid.material.opacity = 0.8;
-    grid.material.transparent = true;
-    scene.add( grid );
 
     // const light = new AmbientLight(Color.NAMES.white, 5.0)
     // const light = new DirectionalLight(Color.NAMES.white, 0.5)
@@ -103,8 +105,11 @@ export function setupScene()
     // });
     // const plane = new Mesh(new PlaneGeometry(10, 10), material)
     // plane.rotation.setFromRotationMatrix()
+    const serverGrid = await storage.hexGrid()
     for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 40)) {
-        scene.add(createHex(cubeCoord, textureLoader));
+        const gameId = serverGrid.get(coordToKey(cubeCoord))
+        const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
+        scene.add(createHex(cubeCoord, textureLoader, coverUrl));
     }
 
     //const clock = new Clock()

@@ -5,14 +5,23 @@ export const JAM_NAME = "56";
 export const gameId = 403641;
 
 
-const HEX_GRID = new Map<CubeCoord, number>
-const COORD_BY_GAMEID = new Map<number, CubeCoord>
+const HEX_GRID = new Map<string, number>
+const COORD_BY_GAMEID = new Map<number, string>
 const GAMES_BY_ID = new Map<number, GameInfo>
 let JAM_STATS: JamStats | undefined = undefined
 
+export function coordToKey(cubeCoord: CubeCoord): string {
+    return `${cubeCoord.q}:${cubeCoord.r}`
+}
+
+export function keyToCoord(key: string): CubeCoord {
+    const [q, r] = key.split(':')
+    return new CubeCoord(Number(q), Number(r))
+}
+
 function nextFreeCoord() {
     for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 10)) {
-        if (!HEX_GRID.get(cubeCoord)) {
+        if (!HEX_GRID.get(coordToKey(cubeCoord))) {
             return cubeCoord
         }
     }
@@ -35,7 +44,7 @@ async function allGames() {
     console.log(games.length, "games preloaded for LD", JAM_NAME)
 }
 
-async function hexGrid(): Promise<Map<CubeCoord, number>> {
+async function hexGrid(): Promise<Map<string, number>> {
     if (HEX_GRID.size === 0) {
         let serverGrid = await fetchHexGrid(JAM_NAME)
         serverGrid.forEach((v, k) => HEX_GRID.set(k, v))
@@ -49,21 +58,26 @@ async function hexGrid(): Promise<Map<CubeCoord, number>> {
 async function setGame(coord: CubeCoord, gameId: number) {
     let result = await postHexGridGame(coord, gameId)
     if (result === gameId) {
-        HEX_GRID.set(coord, gameId)
+        HEX_GRID.set(coordToKey(coord), gameId)
         console.log("Post Hex Grid Success!", coord, gameId)
     } else {
-        HEX_GRID.set(coord, result)
+        HEX_GRID.set(coordToKey(coord), result)
         console.log("Post Hex Grid Failed!", coord, "expected", gameId, "found", result)
     }
     return result
 }
 
 function gameCoordById(gameId: number): CubeCoord | undefined {
-    return COORD_BY_GAMEID.get(gameId)
+    let key = COORD_BY_GAMEID.get(gameId);
+    if (key === undefined) {
+        return undefined
+    }
+    return keyToCoord(key)
 }
 
 
 function gameById(gameId: number): GameInfo {
+    console.log(GAMES_BY_ID, gameId)
     let game = GAMES_BY_ID.get(gameId)
     if (game) {
         return game;
@@ -78,6 +92,7 @@ export let storage = {
     nextFreeCoord,
     setGame,
     gameCoordById,
+    hexGrid,
     gameById
-}
+} as const
 

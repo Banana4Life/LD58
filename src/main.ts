@@ -4,6 +4,6 @@ import {setupScene} from "./scene.ts";
 import {storage} from "./storage.ts";
 
 
-setupScene()
 await storage.init()
+setupScene()
 loadUI()
