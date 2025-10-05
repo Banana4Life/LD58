@@ -1,9 +1,9 @@
 import {CubeCoord} from "./util/tilegrid.ts";
 import {fetchHexGrid, fetchJamStats, findGames, GameInfo, JamStats, postHexGridGame} from "./server.ts";
+import {scene} from "./scene.ts";
+import {TextureLoader} from "three";
 
 export const JAM_NAME = "56";
-export const gameId = 403641;
-
 
 const HEX_GRID = new Map<string, number>
 const COORD_BY_GAMEID = new Map<number, string>
@@ -30,7 +30,10 @@ async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> 
         if (result === next.id) {
             return next
         }
+    } else {
+        await allGames()
     }
+
     return undefined;
 }
 
@@ -48,7 +51,6 @@ function nextFreeCoord() {
 async function init() {
     JAM_STATS = await fetchJamStats(JAM_NAME)
     await hexGrid()
-    await setGame(new CubeCoord(0, 0), gameId) // TODO server side?
     await allGames();
     console.log("Storage Initialized!")
 }
@@ -92,22 +94,39 @@ function gameCoordById(gameId: number): CubeCoord | undefined {
 
 
 function gameById(gameId: number): GameInfo {
-    console.log(GAMES_BY_ID, gameId)
     let game = GAMES_BY_ID.get(gameId)
     if (game) {
         return game;
     }
     // TODO fetch from server?
-    throw new Error("Game not found")
+    throw new Error("Game not found " + gameId)
 }
+
+async function attemptPlacingGame(gameId: number, i: number = 0) {
+    let coord = nextFreeCoord(); // TODO shuffled rings
+    let result = await setGame(coord, gameId)
+    if (result === gameId) {
+        let hexObj = scene.hexObj(coord);
+        if (hexObj) {
+            await allGames();
+            scene.setCoverImage(hexObj, new TextureLoader(), gameById(gameId).cover)
+        }
+        return
+    }
+    if (i < 20) {
+        await attemptPlacingGame(gameId, i + 1)
+    } else {
+        console.error("Could not place game", gameId, "in", i, "tries")
+    }
+}
+
 
 export let storage = {
     init,
     gameCount: () => JAM_STATS?.published,
-    nextFreeCoord,
     placeNextGameAt,
-    setGame,
     gameCoordById,
+    attemptPlacingGame,
     hexGrid,
     gameById
 } as const

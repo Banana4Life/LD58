@@ -55,7 +55,7 @@ async function updateNamePlate(user: string) {
         if (game.current) {
             let coord = storage.gameCoordById(game.current.id);
             if (!coord) {
-                await attemptPlacingGame(game.current.id);
+                await storage.attemptPlacingGame(game.current.id);
 
                 // TODO teleport to
             } else {
@@ -64,22 +64,11 @@ async function updateNamePlate(user: string) {
         }
 
 
+
     }
 }
 
-async function attemptPlacingGame(gameId: number, i: number = 0) {
-    let coord = storage.nextFreeCoord(); // TODO shuffled rings
-    let result = await storage.setGame(coord, gameId)
-    if (result === gameId) {
-        return
-    }
-    if (i < 20) {
-        await attemptPlacingGame(gameId, i + 1)
-    } else {
-        console.error("Could not place game", gameId, "in", i, "tries")
-    }
 
-}
 
 function askEmbedd(current: GameInfo | null) {
     if (current != null) {

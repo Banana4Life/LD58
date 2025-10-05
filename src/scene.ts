@@ -30,6 +30,8 @@ function getSize(obj: Object3D): Vector3 {
     return size
 }
 
+const HEX_GRID_OBJ = new Map<string, Object3D>()
+
 const gridSize = getSize(Models.Hexagon)
 
 function setTexture(mesh: Mesh, names: string[], texture: Texture, tint: ColorRepresentation) {
@@ -141,7 +143,9 @@ export async function setupScene()
     for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 6)) {
         const gameId = serverGrid.get(coordToKey(cubeCoord))
         const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
-        scene.add(createHex(cubeCoord, textureLoader, coverUrl));
+        let hexObj = createHex(cubeCoord, textureLoader, coverUrl);
+        HEX_GRID_OBJ.set(coordToKey(cubeCoord), hexObj)
+        scene.add(hexObj);
     }
 
     //const clock = new Clock()
@@ -187,3 +191,12 @@ export async function setupScene()
     // Start animation loop
     requestAnimationFrame(animate)
 }
+
+ function hexObj(coord: CubeCoord) {
+    return HEX_GRID_OBJ.get(coordToKey(coord))
+}
+
+export let scene = {
+    hexObj,
+    setCoverImage
+}  as const
