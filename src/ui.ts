@@ -38,6 +38,8 @@ let dlgGame = document.querySelector<HTMLDialogElement>("#dlg-game")!;
 let btbWebGameOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-webgame")!;
 let btnJamPageOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-jamgamepage")!;
 let btnAwards = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-awards")!;
+let gameStars = dlgGame.querySelectorAll<HTMLImageElement>(".star")!
+let gameStarsContainer = dlgGame.querySelector<HTMLElement>(".stars")!
 
 btbWebGameOpener.addEventListener("click", (e) => {
     console.log("open...", btbWebGameOpener.dataset.url)
@@ -57,8 +59,17 @@ btnAwards.addEventListener("click", (e) => {
     e.stopPropagation()
     openAwards()
 })
+gameStarsContainer.addEventListener("click", (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    openRating()
+})
 
 let dlgAwards =  document.querySelector<HTMLDialogElement>("#dlg-awards")!;
+let btnCloseAwards = dlgAwards.querySelector<HTMLButtonElement>(".dlg-btn-close-award")
+btnCloseAwards?.addEventListener("click", () => {
+    dlgAwards.close()
+})
 
 
 let dlgYesNo = document.querySelector<HTMLDialogElement>("#dlg-yes-no")!;
@@ -102,12 +113,13 @@ stars.forEach((star, index) => {
     });
 
     star.addEventListener('mouseleave', () => {
-        resetRating()
+        resetRating(dlgRating.dataset, stars)
     });
 });
 
 
-dlgRating.querySelector(".dlg-btn-submit-rating")!.addEventListener('click', () => {
+let btnSubmitRating = dlgRating.querySelector(".dlg-btn-submit-rating")!;
+btnSubmitRating.addEventListener('click', () => {
     submitRating()
 })
 
@@ -116,14 +128,15 @@ function selectRating(e: MouseEvent, index: number, action: string) {
     const isHalf = e.clientX - rect.left < rect.width / 2;
     const isEmpty = index == 0 && e.clientX - rect.left < rect.width / 8;
     index = isEmpty ? index - 1 : index
-    setRatingTo(index, isHalf);
+    setRatingTo(index, isHalf, stars);
     if (action == 'click') {
         dlgRating.dataset.rating = index.toString()
         dlgRating.dataset.halfRating = isHalf.toString()
+        btnSubmitRating.classList.remove("inactive")
     }
 }
 
-function setRatingTo(index: number, isHalf: boolean) {
+function setRatingTo(index: number, isHalf: boolean, stars: NodeListOf<HTMLImageElement>) {
     stars.forEach((s, i) => {
         if (i < index) s.src = fullStar;
         else if (i === index && isHalf) s.src = halfStar;
@@ -133,10 +146,10 @@ function setRatingTo(index: number, isHalf: boolean) {
 }
 
 
-function resetRating() {
-    let index = parseInt(dlgRating.dataset.rating || "-1")
-    let half = dlgRating.dataset.halfRating === "true"
-    setRatingTo(index, half)
+function resetRating(dataset: DOMStringMap, stars: NodeListOf<HTMLImageElement>) {
+    let index = parseInt(dataset.rating || "-1")
+    let half = dataset.halfRating === "true"
+    setRatingTo(index, half, stars)
 }
 
 
@@ -258,6 +271,13 @@ function openGameInfo(gameId: number) {
     }
     btnJamPageOpener.dataset.url = `https://ldjam.com${info.path}`
 
+    // TODO read rating
+    let rating = 2.5
+    dlgGame.dataset.rating = Math.round(rating - 1).toString()
+    dlgGame.dataset.halfRating = (Math.floor(rating) !== rating).toString()
+
+    resetRating(dlgGame.dataset, gameStars)
+
     dlgGame.show()
 
 }
@@ -296,7 +316,6 @@ function openAwards() {
     }).join("")
 
     dlgAwards.showModal()
-
 }
 
 function reportBrokenGame() {
@@ -308,8 +327,9 @@ function reportBrokenGame() {
 function openRating() {
     dlgRating.dataset.rating = undefined
     dlgRating.dataset.halfRating = undefined
-    resetRating();
+    resetRating(dlgRating.dataset, stars)
     dlgRating.show()
+    btnSubmitRating.classList.add("inactive")
 }
 
 
@@ -319,9 +339,11 @@ function submitRating() {
     let half = dlgRating.dataset.halfRating === "true"
 
     console.log("TODO submit rating", gameId, index - (half ? 0.5 : 0))
+    // TODO submit to server
     dlgRating.close()
+    setRatingTo(index, half, gameStars)
 
-    btbWebGameOpener.style.display = 'none'
+    // btbWebGameOpener.style.display = 'none'
 }
 
 

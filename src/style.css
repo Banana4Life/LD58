@@ -61,13 +61,37 @@ canvas {
     }
 }
 
-.stars {
-    display: flex;
-    img {
-        height: 20px;
+
+#dlg-rating {
+    .stars {
+        display: flex;
+        justify-content: center;
+        cursor: pointer;
+        img {
+            height: 20px;
+        }
+        font-size: 40px;
+        font-family: monospace;
     }
-    font-size: 40px;
-    font-family: monospace;
+    .buttons {
+        button.inactive {
+            pointer-events: none;
+            background: dimgray;
+        }
+    }
+}
+
+#dlg-game {
+    .stars {
+        img {
+            height: 20px;
+        }
+        display: flex;
+    }
+    .content-header {
+        display: flex;
+        justify-content: space-between;
+    }
 }
 
 #dlg-awards {
