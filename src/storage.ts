@@ -1,5 +1,5 @@
 import {CubeCoord} from "./util/tilegrid.ts";
-import {fetchHexGrid, fetchJamStats, findGames, GameInfo, JamStats, postHexGridGame} from "./server.ts";
+import {Award, fetchHexGrid, fetchJamStats, findGames, GameInfo, GivenAward, JamStats, postHexGridGame, server} from "./server.ts";
 import {scene} from "./scene.ts";
 import {TextureLoader} from "three";
 import {getJam} from "./util";
@@ -7,19 +7,12 @@ import {getJam} from "./util";
 export const JAM_NAME = getJam();
 
 const HEX_GRID = new Map<string, number>
+const AWARDS_MAP = new Map<number, GivenAward[]>
 const COORD_BY_GAMEID = new Map<number, string>
 const GAMES_BY_ID = new Map<number, GameInfo>
 let JAM_STATS: JamStats | undefined = undefined
+let AWARD_OBJECTS: Award[]
 
-export const AWARD_OBJECTS = [
-    { icon: "💤", name: "Probably did not sleep"},
-    { icon: "☕", name: "Fueled by Caffeine"},
-    { icon: "🔥", name: "Surprised it runs"},
-    { icon: "🐛", name: "Look, a Bug"},
-    { icon: "🧱", name: "Collisions"},
-    { icon: "🚀", name: "Rocket Science"},
-    { icon: "🫠", name: "It Worked Yesterday"},
-]
 export function coordToKey(cubeCoord: CubeCoord): string {
     return `${cubeCoord.q}:${cubeCoord.r}`
 }
@@ -65,7 +58,9 @@ function nextFreeCoord() {
 async function init() {
     JAM_STATS = await fetchJamStats(JAM_NAME)
     await hexGrid()
+    await awardMap()
     await allGames();
+    AWARD_OBJECTS = await server.fetchAwards()
     console.log("Storage Initialized!")
 }
 
@@ -77,6 +72,7 @@ async function allGames() {
 
 async function hexGrid(): Promise<Map<string, number>> {
     if (HEX_GRID.size === 0) {
+        // TODO this never updates atm.
         let serverGrid = await fetchHexGrid(JAM_NAME)
         serverGrid.forEach((v, k) => HEX_GRID.set(k, v))
         serverGrid.forEach((v, k) => COORD_BY_GAMEID.set(v, k))
@@ -84,6 +80,16 @@ async function hexGrid(): Promise<Map<string, number>> {
         // console.table(HEX_GRID)
     }
     return HEX_GRID
+}
+
+async function awardMap(): Promise<Map<number, GivenAward[]>> {
+    if (AWARDS_MAP.size === 0) {
+        // TODO this never updates atm.
+        let givenAwards = await server.fetchGivenAwards(JAM_NAME)
+        console.log(givenAwards)
+        givenAwards.forEach((v, k) => AWARDS_MAP.set(k, v))
+    }
+    return AWARDS_MAP
 }
 
 async function setGame(coord: CubeCoord, gameId: number) {
@@ -142,6 +148,7 @@ async function attemptPlacingGame(gameId: number, i: number = 0) {
 export let storage = {
     init,
     stats: () => JAM_STATS,
+    awards: () => AWARD_OBJECTS,
     placeNextGameAt,
     gameCoordById,
     attemptPlacingGame,

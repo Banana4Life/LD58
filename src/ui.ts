@@ -1,5 +1,5 @@
-import {findUserGames, GameInfo} from "./server.ts";
-import {AWARD_OBJECTS, JAM_NAME, storage} from "./storage.ts";
+import {findUserGames, GameInfo, server} from "./server.ts";
+import {JAM_NAME, storage} from "./storage.ts";
 import fullStar from './assets/full-star.svg';
 import halfStar from './assets/half-star.svg';
 import emptyStar from './assets/empty-star.svg';
@@ -227,8 +227,12 @@ function openOkDialog(textContent: string, cb: (() => void) | null = null) {
     console.log("open ok", textContent)
 }
 
+function currentUser() {
+    return localStorage.getItem(LOCALSTORAGE_USER) || '???';
+}
+
 export async function loadUI() {
-    let user = localStorage.getItem(LOCALSTORAGE_USER);
+    let user = currentUser();
     if (user === null || user === "") {
         openUsernameDialog()
     } else {
@@ -304,26 +308,38 @@ function openWebGame(url: string | undefined) {
 
 function openAwards() {
     let content = dlgAwards.querySelector(".content");
-    content!.innerHTML = AWARD_OBJECTS.map(awardobject => {
+    content!.innerHTML = storage.awards().map(award => {
         const awardObjects = [award1, award2, award3]
         let awIdx = Math.floor(Math.random() * awardObjects.length);
         const randomAwardObject = awardObjects[awIdx]
-        return `<button>
+        return `<button data-award="${award.key}">
                         <div class="bg">
                             <img class="aw-${awIdx}" src="${randomAwardObject}">
                         </div>
                         <div class="bg icon">
-                            <div class="aw-${awIdx}">${awardobject.icon}</div>
+                            <div class="aw-${awIdx}">${award.icon}</div>
                         </div>
-                        <div class="name">${awardobject.name}</div>
+                        <div class="name">${award.name}</div>
                     </button>`
     }).join("")
+    for (let btn of content!.querySelectorAll("button")) {
+        btn.addEventListener("click", () => {
+
+            server.postAward(currentGameId(), currentUser(), btn.dataset.award!)
+
+        }
+        )
+    }
 
     dlgAwards.showModal()
 }
 
+function currentGameId() {
+    return parseInt(dlgGame.dataset.gameId!);
+}
+
 function reportBrokenGame() {
-    let gameId = parseInt(dlgGame.dataset.gameId!)
+    let gameId = currentGameId();
     console.log("TODO report broken game ", gameId)
 
 }
