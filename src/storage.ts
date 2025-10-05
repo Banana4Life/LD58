@@ -1,5 +1,5 @@
 import {CubeCoord} from "./util/tilegrid.ts";
-import {fetchHexGrid, findGames, GameInfo, postHexGridGame} from "./server.ts";
+import {fetchHexGrid, fetchJamStats, findGames, GameInfo, JamStats, postHexGridGame} from "./server.ts";
 
 export const JAM_NAME = "56";
 export const gameId = 403641;
@@ -8,6 +8,7 @@ export const gameId = 403641;
 const HEX_GRID = new Map<CubeCoord, number>
 const COORD_BY_GAMEID = new Map<number, CubeCoord>
 const GAMES_BY_ID = new Map<number, GameInfo>
+let JAM_STATS: JamStats | undefined = undefined
 
 function nextFreeCoord() {
     for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 10)) {
@@ -21,6 +22,7 @@ function nextFreeCoord() {
 
 
 async function init() {
+    JAM_STATS = await fetchJamStats(JAM_NAME)
     await hexGrid()
     await setGame(new CubeCoord(0, 0), gameId) // TODO server side?
     await allGames();
@@ -29,10 +31,8 @@ async function init() {
 
 async function allGames() {
     let games = await findGames(JAM_NAME);
-    games.games.forEach(g => GAMES_BY_ID.set(g.id, g));
-    console.log(games.games.length, "games found for LD", JAM_NAME)
-    console.log("grading enabled:", games["can-grade"])
-    console.table(GAMES_BY_ID.size)
+    games.forEach(g => GAMES_BY_ID.set(g.id, g));
+    console.log(games.length, "games preloaded for LD", JAM_NAME)
 }
 
 async function hexGrid(): Promise<Map<CubeCoord, number>> {
@@ -74,7 +74,7 @@ function gameById(gameId: number): GameInfo {
 
 export let storage = {
     init,
-    gameCount: () => GAMES_BY_ID.size,
+    gameCount: () => JAM_STATS?.published,
     nextFreeCoord,
     setGame,
     gameCoordById,
