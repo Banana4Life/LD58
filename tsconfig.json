@@ -16,7 +16,7 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "esModuleInterop": true,
-    "types": ["vite-plugin-arraybuffer/types"]
+    "types": ["vite/client", "vite-plugin-arraybuffer/types", "vite-svg-loader"]
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
