@@ -20,9 +20,10 @@ export function keyToCoord(key: string): CubeCoord {
 }
 
 async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> {
-    let coolGames = Array.from(GAMES_BY_ID.values()).sort((a, b) => b.cool - a.cool)
+    let coolGames = Array.from(GAMES_BY_ID.values())
+        .sort((a, b) => b.cool - a.cool)
 
-    const next = coolGames.find(g => !GAMES_BY_ID.has(g.id))
+    const next = coolGames.find(g => !(new Set(HEX_GRID.values()).has(g.id)))
 
     if (next) {
         let result = await setGame(coord, next.id)

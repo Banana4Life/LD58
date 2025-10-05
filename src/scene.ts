@@ -1,11 +1,21 @@
 import {Models} from "./models";
 import {
     Box3,
-    Color, ColorRepresentation, DirectionalLight,
-    HemisphereLight, Mesh, MeshLambertMaterial, MeshPhongMaterial,
+    Color,
+    ColorRepresentation,
+    DirectionalLight,
+    HemisphereLight,
+    Mesh,
+    MeshLambertMaterial,
+    MeshPhongMaterial,
     Object3D,
-    PerspectiveCamera, Quaternion,
-    Scene, Texture, TextureLoader,
+    PerspectiveCamera,
+    Quaternion,
+    Raycaster,
+    Scene,
+    Texture,
+    TextureLoader,
+    Vector2,
     Vector3,
     WebGLRenderer
 } from "three";
@@ -47,15 +57,29 @@ function setTexture(mesh: Mesh, names: string[], texture: Texture, tint: ColorRe
     }
 }
 
-function createHex(coord: CubeCoord, textureLoader: TextureLoader, _coverUrl: string | null): Object3D {
-    const hex = Models.Hexagon.clone(true);
+interface TileObjectData {
+    coord: CubeCoord
+}
 
+function isTileObjectData(data: any): data is TileObjectData {
+    return 'coord' in data
+}
+
+function setCoverImage(obj: Object3D, textureLoader: TextureLoader, _coverUrl: string | null) {
     const coverUrl = !!_coverUrl ? _coverUrl : "https://banana4.life/ld58/imageProxy/aHR0cHM6Ly9zdGF0aWMuamFtLmhvc3QvY29udGVudC82MjEvei8xNzRmZi5qcGcuNDgweDM4NC5maXQuanBn.404186b38e0e43ab2456896b32af2f1668556ab8"
-    const childMesh = hex.children[0] as Mesh
-    const texture = textureLoader.load(coverUrl, (t) => {
+    const childMesh = obj.children[0] as Mesh
+    textureLoader.load(coverUrl, (t) => {
         t.anisotropy = 16
+        setTexture(childMesh, ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"], t, Color.NAMES.white)
     })
-    setTexture(childMesh, ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"], texture, Color.NAMES.white)
+}
+
+function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null): Object3D {
+    const hex = Models.Hexagon.clone(true);
+    hex.userData = {
+        coord,
+    } as TileObjectData
+    setCoverImage(hex, textureLoader, coverUrl)
 
     const a = new Quaternion()
     a.setFromAxisAngle({x: 1, y: 0, z: 0}, Math.PI / 2);
@@ -69,6 +93,14 @@ function createHex(coord: CubeCoord, textureLoader: TextureLoader, _coverUrl: st
 
 export async function setupScene()
 {
+    const pointer = new Vector2()
+    document.addEventListener('mousemove', e => {
+        pointer.x = ( e.clientX / window.innerWidth ) * 2 - 1;
+        pointer.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
+    })
+
+    const raycaster = new Raycaster()
+
     const textureLoader = new TextureLoader()
     // Scene setup
     const scene = new Scene();
@@ -106,7 +138,7 @@ export async function setupScene()
     // const plane = new Mesh(new PlaneGeometry(10, 10), material)
     // plane.rotation.setFromRotationMatrix()
     const serverGrid = await storage.hexGrid()
-    for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 40)) {
+    for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 6)) {
         const gameId = serverGrid.get(coordToKey(cubeCoord))
         const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
         scene.add(createHex(cubeCoord, textureLoader, coverUrl));
@@ -114,9 +146,30 @@ export async function setupScene()
 
     //const clock = new Clock()
 
+    document.addEventListener('click', async () => {
+        const intersects = raycaster.intersectObjects( scene.children, true );
+        if (Array.isArray(intersects) && intersects.length > 0) {
+            for (let intersect of intersects) {
+                const parent = intersect.object.parent
+                if (parent) {
+                    const data = parent.userData
+                    if (isTileObjectData(data)) {
+                        const info = await storage.placeNextGameAt(data.coord)
+                        if (info && info.cover) {
+                            setCoverImage(parent, textureLoader, info.cover)
+                        }
+                        break
+                    }
+                }
+            }
+        }
+    })
+
+
     function animate(): void {
         //const dt = clock.getDelta()
 
+        raycaster.setFromCamera( pointer, camera );
         renderer.render(scene, camera);
 
         requestAnimationFrame(animate);
