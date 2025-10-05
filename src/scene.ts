@@ -150,7 +150,7 @@ export async function setupScene()
 
     //const clock = new Clock()
 
-    document.addEventListener('click', async () => {
+    renderer.domElement.addEventListener('click', async () => {
         const intersects = raycaster.intersectObjects( scene.children, true );
         if (Array.isArray(intersects) && intersects.length > 0) {
             for (let intersect of intersects) {
