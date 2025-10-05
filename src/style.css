@@ -61,6 +61,16 @@ canvas {
     }
 }
 
+.stars {
+    display: flex;
+    img {
+        height: 20px;
+    }
+    font-size: 40px;
+    font-family: monospace;
+}
+
+
 header {
     display: flex;
     justify-content: space-between;

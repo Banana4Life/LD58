@@ -8,6 +8,7 @@ export interface GameInfo {
     cover: string | null,
     web: string | null,
     cool: number
+    path: String
 }
 
 export interface UserGames {

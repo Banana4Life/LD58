@@ -1,5 +1,8 @@
 import { findUserGames, GameInfo} from "./server.ts";
 import { JAM_NAME,  storage} from "./storage.ts";
+import fullStar from './assets/full-star.svg';
+import halfStar from './assets/half-star.svg';
+import emptyStar from './assets/empty-star.svg';
 
 const LOCALSTORAGE_USER = "user";
 
@@ -8,7 +11,9 @@ dlgUserName.querySelector("form")?.addEventListener("submit", saveUserName)
 
 let dlgOk = document.querySelector<HTMLDialogElement>("#dlg-ok")!;
 let dlgOkCb: (() => void) | null = null;
-dlgOk.querySelector(".dlg-btn-ok")?.addEventListener("click", () => {
+let dlgBtnOk = dlgOk.querySelector(".dlg-btn-ok")!;
+
+dlgBtnOk.addEventListener("click", () => {
     dlgOk.close();
     // console.log(dlgOk, "close ok", dlgOkCb)
     if (dlgOkCb) {
@@ -26,6 +31,106 @@ btnChangeUser.addEventListener("click", openUsernameDialog)
 
 
 let dlgGame = document.querySelector<HTMLDialogElement>("#dlg-game")!;
+let webGameOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-webgame")!;
+let jamPageOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-jamgamepage")!;
+
+let dlgYesNo = document.querySelector<HTMLDialogElement>("#dlg-yes-no")!;
+let dlgBtnYes = dlgYesNo.querySelector<HTMLButtonElement>(".dlg-btn-yes")!;
+let dlgBtnNo = dlgYesNo.querySelector<HTMLButtonElement>(".dlg-btn-no")!;
+
+let dlgYesNoCb: {
+  yes: (() => void) | null;
+  no: (() => void) | null;
+} = {yes: null, no: null}
+
+dlgBtnYes.addEventListener("click", () => {
+    dlgYesNo.close();
+    if (dlgYesNoCb.yes) {
+        let cb = dlgYesNoCb.yes
+        dlgYesNoCb.yes = null
+        cb()
+    }
+})
+
+dlgBtnNo.addEventListener("click", () => {
+    console.log("no", dlgYesNoCb)
+    console.log("no", dlgYesNoCb)
+    dlgYesNo.close();
+    if (dlgYesNoCb.no) {
+        let cb = dlgYesNoCb.no
+        dlgYesNoCb.no = null
+        cb()
+    }
+})
+
+
+let dlgRating = document.querySelector<HTMLDialogElement>("#dlg-rating")!;
+let stars = dlgRating.querySelectorAll<HTMLImageElement>(".star")!
+stars.forEach((star, index) => {
+    star.addEventListener('mousemove', (e) => {
+       selectRating(e, index, 'move')
+    });
+    star.addEventListener('click', (e) => {
+        selectRating(e, index, 'click')
+    });
+
+    star.addEventListener('mouseleave', () => {
+        resetRating()
+    });
+});
+
+function selectRating(e: MouseEvent, index: number, action: string) {
+    const rect = (e.target as HTMLElement)!.getBoundingClientRect();
+    const isHalf = e.clientX - rect.left < rect.width / 2;
+    const isEmpty = index == 0 && e.clientX - rect.left < rect.width / 8;
+    index = isEmpty ? index - 1 : index
+    setRatingTo(index, isHalf);
+    if (action == 'click') {
+        dlgRating.dataset.rating = index.toString()
+        dlgRating.dataset.halfRating = isHalf.toString()
+    }
+}
+
+function setRatingTo(index: number, isHalf: boolean) {
+    stars.forEach((s, i) => {
+        if (i < index) s.src = fullStar;
+        else if (i === index && isHalf) s.src = halfStar;
+        else if (i === index) s.src = fullStar
+        else s.src = emptyStar
+    });
+}
+
+
+function resetRating() {
+    let index = parseFloat(dlgRating.dataset.rating || "-1")
+    let half = dlgRating.dataset.halfRating === "true"
+    setRatingTo(index, half)
+}
+
+// let stars = dlgRating.querySelector(".stars")!
+// const STAR_IMAGES = ["empty-star.svg", "half-star.svg", "full-star.svg"]
+//
+// stars.addEventListener("mousemove", (e) => {
+//     const target = e.target as HTMLImageElement;
+//     if (target && target.classList.contains("star")) {
+//         const numStars = Math.floor(e.offsetX / target.width);
+//         console.log(numStars, e.offsetX, target.width, e)
+//         target.src = `/src/assets/${STAR_IMAGES[numStars]}`;
+//     }
+// })
+
+webGameOpener.addEventListener("click", (e) => {
+    console.log("open...", webGameOpener.dataset.url)
+    e.preventDefault()
+    e.stopPropagation()
+    openWebGame(webGameOpener.dataset.url)
+})
+
+jamPageOpener.addEventListener("click", (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    window.open(jamPageOpener.dataset.url, "_blank")
+})
 
 document.addEventListener("click", (e) => {
     if (dlgGame.open && dlgGame.contains(e.target as Node)) {
@@ -131,14 +236,61 @@ function saveUserName(e: SubmitEvent) {
     dlgUserName.close()
 }
 
-function clickGame(gameId: number) {
-    console.log("Open Game", gameId)
+function openGameInfo(gameId: number) {
     let info = storage.gameById(gameId)
+
+    console.log("Open Game", gameId, info)
+
+    dlgGame.dataset.gameId = gameId.toString();
     dlgGame.querySelector(".content")!.textContent = info.name
+
+    webGameOpener.style.display = "none"
+    if (info.web) {
+        webGameOpener.style.display = "block"
+        webGameOpener.dataset.url = info.web
+    }
+    jamPageOpener.dataset.url = `https://ldjam.com${info.path}`
+
     dlgGame.show()
+}
+
+function openWebGame(url: string | undefined) {
+    let popupWindow: Window | null = null;
+    if (url) {
+        popupWindow = window.open(url,"_blank","resizable=no,toolbar=no,scrollbars=no,menubar=no,status=no,directories=no");
+
+        const interval = setInterval(() => {
+            if (popupWindow === null || popupWindow.closed) {
+                clearInterval(interval);
+                openQuestion("Thanks for Playing. Did it work?", openRating, reportBrokenGame)
+                // TODO trophies
+                // TODO if logged in note that we played a game
+            }
+        }, 100);
+    }
+}
+
+function reportBrokenGame() {
+    let gameId = parseInt(dlgGame.dataset.gameId!)
+    console.log("TODO report broken game ", gameId)
+
+}
+
+function openRating() {
+    let gameId = parseInt(dlgGame.dataset.gameId!)
+    resetRating();
+    dlgRating.show()
+}
+
+
+function openQuestion(question: string, yesCb: (() => void) | null, noCb: (() => void) | null) {
+    dlgYesNo.querySelector(".content")!.textContent = question;
+    dlgYesNoCb.yes = yesCb;
+    dlgYesNoCb.no = noCb;
+    dlgYesNo.showModal()
 }
 
 
 export let ui = {
-    clickGame
+    clickGame: openGameInfo
 } as const
