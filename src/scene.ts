@@ -281,6 +281,16 @@ function setupLight(scene: Scene, camera: Camera) {
 }
 
 let currentTile: Object3D | undefined = undefined
+function trySelectTile(coord: CubeCoord, tile: Object3D, isNewTile: boolean = false) {
+    let gameAt = storage.gameAt(coord)
+    if (gameAt) {
+        selectTile(tile, gameAt, isNewTile)
+        return true
+    }
+
+    return false
+}
+
 function selectTile(tile: Object3D, gameAt: number, isNewTile: boolean = false) {
     if (currentTile === tile) {
         unselectCurrentTile()
@@ -359,10 +369,7 @@ export async function setupScene()
                 if (parent) {
                     const data = parent.userData
                     if (isTileObjectData(data)) {
-                        let gameAt = storage.gameAt(data.coord);
-                        if (gameAt) {
-                            selectTile(parent, gameAt)
-                        } else {
+                        if (!trySelectTile(data.coord, parent)) {
                             const info = await storage.placeNextGameAt(data.coord)
                             if (info && info.cover) {
                                 unselectCurrentTile()
@@ -374,10 +381,7 @@ export async function setupScene()
                                     ?.then(play => {
                                     play()
                                     parent.removeFromParent()
-                                    gameAt = storage.gameAt(data.coord);
-                                    if (gameAt) {
-                                        selectTile(newObj, gameAt, true)
-                                    }
+                                    trySelectTile(data.coord, newObj, true)
                                 })
                             }
                         }
