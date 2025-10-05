@@ -104,8 +104,8 @@ dlgBtnNo.addEventListener("click", () => {
 
 
 let dlgRating = document.querySelector<HTMLDialogElement>("#dlg-rating")!;
-let stars = dlgRating.querySelectorAll<HTMLImageElement>(".star")!
-stars.forEach((star, index) => {
+let ratingStars = dlgRating.querySelectorAll<HTMLImageElement>(".star")!
+ratingStars.forEach((star, index) => {
     star.addEventListener('mousemove', (e) => {
         selectRating(e, index, 'move')
     });
@@ -114,7 +114,7 @@ stars.forEach((star, index) => {
     });
 
     star.addEventListener('mouseleave', () => {
-        resetRating(dlgRating.dataset, stars)
+        resetStarsToDataSet(dlgRating.dataset, ratingStars)
     });
 });
 
@@ -123,13 +123,17 @@ let btnSubmitRating = dlgRating.querySelector(".dlg-btn-submit-rating")!;
 btnSubmitRating.addEventListener('click', () => {
     submitRating()
 })
+let btnCancelRating = dlgRating.querySelector(".dlg-btn-cancel-rating")!;
+btnCancelRating.addEventListener('click', () => {
+    dlgRating.close()
+})
 
 function selectRating(e: MouseEvent, index: number, action: string) {
     const rect = (e.target as HTMLElement)!.getBoundingClientRect();
     const isHalf = e.clientX - rect.left < rect.width / 2;
     const isEmpty = index == 0 && e.clientX - rect.left < rect.width / 8;
     index = isEmpty ? index - 1 : index
-    setRatingTo(index, isHalf, stars);
+    setStars(index, isHalf, ratingStars);
     if (action == 'click') {
         dlgRating.dataset.rating = index.toString()
         dlgRating.dataset.halfRating = isHalf.toString()
@@ -137,7 +141,7 @@ function selectRating(e: MouseEvent, index: number, action: string) {
     }
 }
 
-function setRatingTo(index: number, isHalf: boolean, stars: NodeListOf<HTMLImageElement>) {
+function setStars(index: number, isHalf: boolean, stars: NodeListOf<HTMLImageElement>) {
     stars.forEach((s, i) => {
         if (i < index) s.src = fullStar;
         else if (i === index && isHalf) s.src = halfStar;
@@ -147,10 +151,10 @@ function setRatingTo(index: number, isHalf: boolean, stars: NodeListOf<HTMLImage
 }
 
 
-function resetRating(dataset: DOMStringMap, stars: NodeListOf<HTMLImageElement>) {
+function resetStarsToDataSet(dataset: DOMStringMap, stars: NodeListOf<HTMLImageElement>) {
     let index = parseInt(dataset.rating || "-1")
     let half = dataset.halfRating === "true"
-    setRatingTo(index, half, stars)
+    setStars(index, half, stars)
 }
 
 
@@ -261,7 +265,13 @@ function saveUserName(e: SubmitEvent) {
     dlgUserName.close()
 }
 
-function openGameInfo(gameId: number) {
+function setDatasetStars(rating: number, dlg: HTMLDialogElement) {
+    let starIndex = Math.floor((rating / 2) - 1);
+    dlg.dataset.rating = starIndex.toString()
+    dlg.dataset.halfRating = (Math.floor(rating % 2) === 1).toString()
+}
+
+async function openGameInfo(gameId: number) {
     let info = storage.gameById(gameId)
 
     console.log("Open Game", gameId)
@@ -276,12 +286,9 @@ function openGameInfo(gameId: number) {
     }
     btnJamPageOpener.dataset.url = `https://ldjam.com${info.path}`
 
-    // TODO read rating
-    let rating = 2.5
-    dlgGame.dataset.rating = Math.round(rating - 1).toString()
-    dlgGame.dataset.halfRating = (Math.floor(rating) !== rating).toString()
-
-    resetRating(dlgGame.dataset, gameStars)
+    let rating = await server.fetchGameRating(gameId)
+    setDatasetStars(rating, dlgGame);
+    resetStarsToDataSet(dlgGame.dataset, gameStars)
 
     dlgGame.show()
 
@@ -354,24 +361,29 @@ function reportBrokenGame() {
 
 }
 
-function openRating() {
-    dlgRating.dataset.rating = undefined
-    dlgRating.dataset.halfRating = undefined
-    resetRating(dlgRating.dataset, stars)
-    dlgRating.show()
-    btnSubmitRating.classList.add("inactive")
+async function openRating() {
+
+    const rating = await storage.getUserRating(currentGameId(), currentUser())
+    setDatasetStars(rating, dlgRating)
+    resetStarsToDataSet(dlgRating.dataset, ratingStars)
+    dlgRating.showModal()
+    if (rating === -1) {
+        btnSubmitRating.classList.add("inactive")
+    }
 }
 
 
-function submitRating() {
+async function submitRating() {
     let gameId = parseInt(dlgGame.dataset.gameId!)
     let index = parseInt(dlgRating.dataset.rating || "-1")
     let half = dlgRating.dataset.halfRating === "true"
 
-    console.log("TODO submit rating", gameId, index - (half ? 0.5 : 0))
-    // TODO submit to server
+    await storage.setUserRating(gameId, currentUser(), ((index + 1) * 2) + (half ? 1 : 0))
+
     dlgRating.close()
-    setRatingTo(index, half, gameStars)
+    let rating = await server.fetchGameRating(gameId)
+    setDatasetStars(rating, dlgGame);
+    resetStarsToDataSet(dlgGame.dataset, gameStars)
 
     // btbWebGameOpener.style.display = 'none'
 }

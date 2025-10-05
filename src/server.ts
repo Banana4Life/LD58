@@ -96,11 +96,36 @@ async function fetchGivenAwards(jam: String){
     console.log("GET", url)
     return fetch(url)
         .then(r => r.json())
-        .then(r => new Map<string, GivenAward[]>(Object.entries(r))) // TODO
+        .then(r => new Map<string, GivenAward[]>(Object.entries(r)))
 }
 
 async function postAward(gameId: number, user: string, awardKey: string){
     let url = getBackendUrlFor(`/ld58/award`) + `?gameId=${gameId}&user=${user}&awardKey=${awardKey}`
+    console.log("POST", url)
+    return fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+    }).then((r) => r.json())
+}
+
+async function fetchUserRatings(jam: string, user: string){
+    let url = getBackendUrlFor(`/ld58/userRatings`) + `?jam=${jam}&user=${user}`
+    console.log("GET", url)
+    return fetch(url)
+        .then(r => r.json())
+        .then(r => new Map<string, number>(Object.entries(r)))
+}
+
+async function fetchGameRating(gameId: number){
+    let url = getBackendUrlFor(`/ld58/gameRating`) + `?gameId=${gameId}`
+    console.log("GET", url)
+    return fetch(url)
+        .then(r => r.json())
+        .then(r => r as number)
+}
+
+async function postRating(gameId: number, user: string, rating: number){
+    let url = getBackendUrlFor(`/ld58/rate`) + `?gameId=${gameId}&user=${user}&rating=${rating}`
     console.log("POST", url)
     return fetch(url, {
         method: "POST",
@@ -116,5 +141,8 @@ export let server = {
     fetchJamStats,
     fetchAwards,
     fetchGivenAwards,
-    postAward
+    postAward,
+    fetchUserRatings,
+    fetchGameRating,
+    postRating,
 } as const

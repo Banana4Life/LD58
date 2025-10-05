@@ -337,7 +337,7 @@ function setupLight(scene: Scene, camera: Camera): Updater {
 }
 
 let currentTile: Object3D | undefined = undefined
-function trySelectTile(coord: CubeCoord, tile: Object3D, isNewTile: boolean = false) {
+async function trySelectTile(coord: CubeCoord, tile: Object3D, isNewTile: boolean = false) {
     let gameAt = storage.gameAt(coord)
     if (gameAt) {
         selectTile(tile, gameAt, isNewTile)
@@ -347,7 +347,7 @@ function trySelectTile(coord: CubeCoord, tile: Object3D, isNewTile: boolean = fa
     return false
 }
 
-function selectTile(tile: Object3D, gameAt: number, isNewTile: boolean = false) {
+async function selectTile(tile: Object3D, gameAt: number, isNewTile: boolean = false) {
     if (currentTile === tile) {
         unselectCurrentTile()
         return
@@ -428,7 +428,7 @@ export async function setupScene()
                 if (parent) {
                     const data = parent.userData
                     if (isTileObjectData(data)) {
-                        if (!trySelectTile(data.coord, parent)) {
+                        if (!await trySelectTile(data.coord, parent)) {
                             const info = await storage.placeNextGameAt(data.coord)
                             if (info && info.cover) {
                                 parent.position.y += selectedHeight
@@ -440,10 +440,10 @@ export async function setupScene()
                                         return Sounds.DropSlap.prepare(audioListener)
                                     })
                                 ?.then(play => enqueueTile(newObj, true).then(() => play))
-                                    ?.then(play => {
+                                    ?.then(async play => {
                                     play()
                                     parent.removeFromParent()
-                                    trySelectTile(data.coord, newObj, true)
+                                    await trySelectTile(data.coord, newObj, true)
                                 })
                             }
                         }

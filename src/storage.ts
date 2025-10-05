@@ -8,6 +8,7 @@ export const JAM_NAME = getJam();
 
 const HEX_GRID = new Map<string, number>
 const AWARDS_MAP = new Map<number, GivenAward[]>
+const RATINGS_MAP = new Map<number, number>
 const COORD_BY_GAMEID = new Map<number, string>
 const GAMES_BY_ID = new Map<number, GameInfo>
 let JAM_STATS: JamStats | undefined = undefined
@@ -162,6 +163,20 @@ function giveAward(gameId: number, user: string, awardKey: string) {
     return count + 1
 }
 
+async function getUserRating(gameId: number, user: string) {
+    if (RATINGS_MAP.size === 0) {
+        const userRatings = await server.fetchUserRatings(getJam(), user);
+        userRatings.forEach((v, k) => RATINGS_MAP.set(parseInt(k), v))
+    }
+
+    return RATINGS_MAP.get(gameId) || -1
+}
+
+async function setUserRating(gameId: number, user: string, rating: number) {
+    if (await server.postRating(gameId, user, rating)) {
+        RATINGS_MAP.set(gameId, rating)
+    }
+}
 
 export let storage = {
     init,
@@ -175,5 +190,7 @@ export let storage = {
     gameById,
     givenAwards,
     giveAward,
+    getUserRating,
+    setUserRating,
 } as const
 
