@@ -11,6 +11,15 @@ const COORD_BY_GAMEID = new Map<number, string>
 const GAMES_BY_ID = new Map<number, GameInfo>
 let JAM_STATS: JamStats | undefined = undefined
 
+export const AWARD_OBJECTS = [
+    { icon: "💤", name: "Probably did not sleep"},
+    { icon: "☕", name: "Fueled by Caffeine"},
+    { icon: "🔥", name: "Surprised it runs"},
+    { icon: "🐛", name: "Look, a Bug"},
+    { icon: "🧱", name: "Collisions"},
+    { icon: "🚀", name: "Rocket Science"},
+    { icon: "🫠", name: "It Worked Yesterday"},
+]
 export function coordToKey(cubeCoord: CubeCoord): string {
     return `${cubeCoord.q}:${cubeCoord.r}`
 }

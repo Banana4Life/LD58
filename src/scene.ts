@@ -324,7 +324,7 @@ export async function setupScene()
                     if (isTileObjectData(data)) {
                         let gameAt = storage.gameAt(data.coord);
                         if (gameAt) {
-                            ui.clickGame(gameAt)
+                            ui.openGameInfo(gameAt)
                         } else {
                             const info = await storage.placeNextGameAt(data.coord)
                             if (info && info.cover) {

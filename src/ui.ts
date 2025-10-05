@@ -1,8 +1,12 @@
-import { findUserGames, GameInfo} from "./server.ts";
-import { JAM_NAME,  storage} from "./storage.ts";
+import {findUserGames, GameInfo} from "./server.ts";
+import {AWARD_OBJECTS, JAM_NAME, storage} from "./storage.ts";
 import fullStar from './assets/full-star.svg';
 import halfStar from './assets/half-star.svg';
 import emptyStar from './assets/empty-star.svg';
+import award1 from './assets/award-1.svg';
+import award2 from './assets/award-2.svg';
+import award3 from './assets/award-3.svg';
+
 
 const LOCALSTORAGE_USER = "user";
 
@@ -31,16 +35,39 @@ btnChangeUser.addEventListener("click", openUsernameDialog)
 
 
 let dlgGame = document.querySelector<HTMLDialogElement>("#dlg-game")!;
-let webGameOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-webgame")!;
-let jamPageOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-jamgamepage")!;
+let btbWebGameOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-webgame")!;
+let btnJamPageOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-jamgamepage")!;
+let btnAwards = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-awards")!;
+
+btbWebGameOpener.addEventListener("click", (e) => {
+    console.log("open...", btbWebGameOpener.dataset.url)
+    e.preventDefault()
+    e.stopPropagation()
+    openWebGame(btbWebGameOpener.dataset.url)
+})
+
+btnJamPageOpener.addEventListener("click", (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    window.open(btnJamPageOpener.dataset.url, "_blank")
+})
+
+btnAwards.addEventListener("click", (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    openAwards()
+})
+
+let dlgAwards =  document.querySelector<HTMLDialogElement>("#dlg-awards")!;
+
 
 let dlgYesNo = document.querySelector<HTMLDialogElement>("#dlg-yes-no")!;
 let dlgBtnYes = dlgYesNo.querySelector<HTMLButtonElement>(".dlg-btn-yes")!;
 let dlgBtnNo = dlgYesNo.querySelector<HTMLButtonElement>(".dlg-btn-no")!;
 
 let dlgYesNoCb: {
-  yes: (() => void) | null;
-  no: (() => void) | null;
+    yes: (() => void) | null;
+    no: (() => void) | null;
 } = {yes: null, no: null}
 
 dlgBtnYes.addEventListener("click", () => {
@@ -68,7 +95,7 @@ let dlgRating = document.querySelector<HTMLDialogElement>("#dlg-rating")!;
 let stars = dlgRating.querySelectorAll<HTMLImageElement>(".star")!
 stars.forEach((star, index) => {
     star.addEventListener('mousemove', (e) => {
-       selectRating(e, index, 'move')
+        selectRating(e, index, 'move')
     });
     star.addEventListener('click', (e) => {
         selectRating(e, index, 'click')
@@ -78,6 +105,11 @@ stars.forEach((star, index) => {
         resetRating()
     });
 });
+
+
+dlgRating.querySelector(".dlg-btn-submit-rating")!.addEventListener('click', () => {
+    submitRating()
+})
 
 function selectRating(e: MouseEvent, index: number, action: string) {
     const rect = (e.target as HTMLElement)!.getBoundingClientRect();
@@ -102,35 +134,11 @@ function setRatingTo(index: number, isHalf: boolean) {
 
 
 function resetRating() {
-    let index = parseFloat(dlgRating.dataset.rating || "-1")
+    let index = parseInt(dlgRating.dataset.rating || "-1")
     let half = dlgRating.dataset.halfRating === "true"
     setRatingTo(index, half)
 }
 
-// let stars = dlgRating.querySelector(".stars")!
-// const STAR_IMAGES = ["empty-star.svg", "half-star.svg", "full-star.svg"]
-//
-// stars.addEventListener("mousemove", (e) => {
-//     const target = e.target as HTMLImageElement;
-//     if (target && target.classList.contains("star")) {
-//         const numStars = Math.floor(e.offsetX / target.width);
-//         console.log(numStars, e.offsetX, target.width, e)
-//         target.src = `/src/assets/${STAR_IMAGES[numStars]}`;
-//     }
-// })
-
-webGameOpener.addEventListener("click", (e) => {
-    console.log("open...", webGameOpener.dataset.url)
-    e.preventDefault()
-    e.stopPropagation()
-    openWebGame(webGameOpener.dataset.url)
-})
-
-jamPageOpener.addEventListener("click", (e) => {
-    e.preventDefault()
-    e.stopPropagation()
-    window.open(jamPageOpener.dataset.url, "_blank")
-})
 
 document.addEventListener("click", (e) => {
     if (dlgGame.open && dlgGame.contains(e.target as Node)) {
@@ -153,7 +161,8 @@ async function updateNamePlate(user: string) {
         ];
         const randomIndex = Math.floor(Math.random() * dialogs.length);
         const randomDialog = dialogs[randomIndex];
-        openOkDialog(randomDialog, () => {});
+        openOkDialog(randomDialog, () => {
+        });
 
     } else {
         const randomIndex = Math.floor(Math.random() * game.games.length);
@@ -187,10 +196,8 @@ async function updateNamePlate(user: string) {
         }
 
 
-
     }
 }
-
 
 
 function askEmbedd(current: GameInfo | null) {
@@ -204,7 +211,7 @@ function openOkDialog(textContent: string, cb: (() => void) | null = null) {
     dlgOk.querySelector(".content")!.textContent = textContent;
     dlgOkCb = cb;
     dlgOk.show()
-    console.log("open ok",textContent)
+    console.log("open ok", textContent)
 }
 
 export async function loadUI() {
@@ -239,25 +246,26 @@ function saveUserName(e: SubmitEvent) {
 function openGameInfo(gameId: number) {
     let info = storage.gameById(gameId)
 
-    console.log("Open Game", gameId, info)
+    console.log("Open Game", gameId)
 
     dlgGame.dataset.gameId = gameId.toString();
     dlgGame.querySelector(".content")!.textContent = info.name
 
-    webGameOpener.style.display = "none"
+    btbWebGameOpener.style.display = "none"
     if (info.web) {
-        webGameOpener.style.display = "block"
-        webGameOpener.dataset.url = info.web
+        btbWebGameOpener.style.display = "block"
+        btbWebGameOpener.dataset.url = info.web
     }
-    jamPageOpener.dataset.url = `https://ldjam.com${info.path}`
+    btnJamPageOpener.dataset.url = `https://ldjam.com${info.path}`
 
     dlgGame.show()
+
 }
 
 function openWebGame(url: string | undefined) {
     let popupWindow: Window | null = null;
     if (url) {
-        popupWindow = window.open(url,"_blank","resizable=no,toolbar=no,scrollbars=no,menubar=no,status=no,directories=no");
+        popupWindow = window.open(url, "_blank", "resizable=no,toolbar=no,scrollbars=no,menubar=no,status=no,directories=no");
 
         const interval = setInterval(() => {
             if (popupWindow === null || popupWindow.closed) {
@@ -270,6 +278,27 @@ function openWebGame(url: string | undefined) {
     }
 }
 
+function openAwards() {
+    let content = dlgAwards.querySelector(".content");
+    content!.innerHTML = AWARD_OBJECTS.map(awardobject => {
+        const awardObjects = [award1, award2, award3]
+        let awIdx = Math.floor(Math.random() * awardObjects.length);
+        const randomAwardObject = awardObjects[awIdx]
+        return `<button>
+                        <div class="bg">
+                            <img class="aw-${awIdx}" src="${randomAwardObject}">
+                        </div>
+                        <div class="bg icon">
+                            <div class="aw-${awIdx}">${awardobject.icon}</div>
+                        </div>
+                        <div class="name">${awardobject.name}</div>
+                    </button>`
+    }).join("")
+
+    dlgAwards.showModal()
+
+}
+
 function reportBrokenGame() {
     let gameId = parseInt(dlgGame.dataset.gameId!)
     console.log("TODO report broken game ", gameId)
@@ -277,8 +306,22 @@ function reportBrokenGame() {
 }
 
 function openRating() {
+    dlgRating.dataset.rating = undefined
+    dlgRating.dataset.halfRating = undefined
     resetRating();
     dlgRating.show()
+}
+
+
+function submitRating() {
+    let gameId = parseInt(dlgGame.dataset.gameId!)
+    let index = parseInt(dlgRating.dataset.rating || "-1")
+    let half = dlgRating.dataset.halfRating === "true"
+
+    console.log("TODO submit rating", gameId, index - (half ? 0.5 : 0))
+    dlgRating.close()
+
+    btbWebGameOpener.style.display = 'none'
 }
 
 
@@ -291,5 +334,5 @@ function openQuestion(question: string, yesCb: (() => void) | null, noCb: (() =>
 
 
 export let ui = {
-    clickGame: openGameInfo
+    openGameInfo
 } as const
