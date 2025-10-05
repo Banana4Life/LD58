@@ -1,6 +1,7 @@
 import {Models} from "./models";
 import {
-    Box3, Clock,
+    Box3,
+    Clock,
     Color,
     ColorRepresentation,
     DirectionalLight,
@@ -21,6 +22,7 @@ import {
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {CubeCoord} from "./util/tilegrid.ts";
 import {coordToKey, storage} from "./storage.ts";
+import {damp} from "three/src/math/MathUtils";
 
 function getSize(obj: Object3D): Vector3 {
     const bounds = new Box3().setFromObject(obj)
@@ -62,6 +64,7 @@ interface TileObjectData {
     coord: CubeCoord
     targetLevel: number
     initialLevel: number
+    fallingTime: number
 }
 
 function isTileObjectData(data: any): data is TileObjectData {
@@ -84,6 +87,7 @@ function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: str
         coord,
         targetLevel: targetLevel,
         initialLevel: fallFrom,
+        fallingTime: 0,
     } as TileObjectData
     setCoverImage(hex, textureLoader, coverUrl)
     hex.setRotationFromQuaternion(Models.Hexagon.rotationToFlatten)
@@ -92,14 +96,41 @@ function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: str
     return hex
 }
 
-function tileSpawner(scene: Scene, tilesPerSecond: number): [(dt: DOMHighResTimeStamp) => void, (obj: Object3D) => void] {
+function tileSpawner(scene: Scene, tilesPerSecond: number, fallDampening: number): [(dt: DOMHighResTimeStamp) => void, (obj: Object3D) => void] {
     let tileDelay = 1/tilesPerSecond
     const tileQueue: Object3D[] = []
 
+    const falling = new Set<number>()
+    const epsilon = 0.001
+
     const f = (dt: DOMHighResTimeStamp) => {
+        for (let id of falling) {
+            const obj = scene.getObjectById(id)
+            if (!obj) {
+                falling.delete(id)
+                continue
+            }
+            const userData = obj.userData
+            if (!isTileObjectData(userData)) {
+                falling.delete(id)
+                continue
+            }
+            if (obj.position.y - epsilon <= userData.targetLevel) {
+                obj.position.setY(userData.targetLevel)
+                falling.delete(id)
+                continue
+            }
+
+
+            //obj.position.setY(lerp(userData.initialLevel, userData.targetLevel, smootherstep(userData.fallingTime, 0, fallDuration)))
+            obj.position.setY(damp(obj.position.y, userData.targetLevel, fallDampening, dt))
+            userData.fallingTime += dt
+        }
+
         if (tileDelay <= 0) {
             const queuedTile = tileQueue.shift()
             if (queuedTile != null) {
+                falling.add(queuedTile.id)
                 scene.add(queuedTile)
             }
             tileDelay = 1/tilesPerSecond
@@ -153,7 +184,7 @@ export async function setupScene()
     orbitControls.listenToKeyEvents(window)
     orbitControls.update()
 
-    const [spawnTiles, enqueueTile] = tileSpawner(scene, 10)
+    const [spawnTiles, enqueueTile] = tileSpawner(scene, 10, 4)
 
     // const material = new MeshBasicMaterial({
     //     color: Color.NAMES.green,
@@ -164,7 +195,7 @@ export async function setupScene()
     for (let cubeCoord of CubeCoord.ORIGIN.shuffledRingsAround(0, 6)) {
         const gameId = serverGrid.get(coordToKey(cubeCoord))
         const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
-        let hexObj = createHex(cubeCoord, textureLoader, coverUrl, 0);
+        let hexObj = createHex(cubeCoord, textureLoader, coverUrl, 100);
         HEX_GRID_OBJ.set(coordToKey(cubeCoord), hexObj)
         enqueueTile(hexObj);
     }
