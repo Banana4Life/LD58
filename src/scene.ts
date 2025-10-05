@@ -6,7 +6,6 @@ import {
     Clock,
     Color,
     ColorRepresentation,
-    DirectionalLight,
     HemisphereLight,
     Mesh,
     MeshLambertMaterial,
@@ -17,6 +16,7 @@ import {
     Raycaster,
     RepeatWrapping,
     Scene,
+    SpotLight,
     Texture,
     TextureLoader,
     Vector2,
@@ -263,6 +263,22 @@ function setupControls(camera: Camera, renderer: WebGLRenderer) {
     orbitControls.update()
 }
 
+function setupLight(scene: Scene, camera: Camera) {
+    const hemisphereLight = new HemisphereLight( Color.NAMES.white, Color.NAMES.white, .4);
+    hemisphereLight.castShadow = true
+    scene.add(hemisphereLight)
+
+    const spotTarget = new Object3D()
+    scene.add(spotTarget)
+    let spotLight = new SpotLight(Color.NAMES.white, 10000, 0, Math.PI/2);
+    spotLight.castShadow = true
+    camera.add(spotLight)
+    spotLight.position.set(0,0,100);
+    spotLight.target = camera;
+    spotLight.castShadow = true
+
+}
+
 export async function setupScene()
 {
     const pointer = new Vector2()
@@ -278,6 +294,7 @@ export async function setupScene()
     const scene = new Scene();
     scene.background = new Color(Color.NAMES.hotpink)
     const camera = new PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1000);
+    scene.add(camera)
     camera.translateY(100)
     const renderer = new WebGLRenderer({
         antialias: true
@@ -287,12 +304,7 @@ export async function setupScene()
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // const light = new AmbientLight(Color.NAMES.white, 5.0)
-    // const light = new DirectionalLight(Color.NAMES.white, 0.5)
-    scene.add(new DirectionalLight(Color.NAMES.white, 0.05))
-    const light = new HemisphereLight( Color.NAMES.white, Color.NAMES.white, 1);
-    scene.add(light)
-
+    setupLight(scene, camera)
     setupControls(camera, renderer)
 
     const [spawnTiles, enqueueTile] = tileSpawner(scene, 10)
