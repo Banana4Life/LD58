@@ -87,7 +87,8 @@ async function awardMap(): Promise<Map<number, GivenAward[]>> {
         // TODO this never updates atm.
         let givenAwards = await server.fetchGivenAwards(JAM_NAME)
         console.log(givenAwards)
-        givenAwards.forEach((v, k) => AWARDS_MAP.set(k, v))
+
+        givenAwards.forEach((v, k) => AWARDS_MAP.set(parseInt(k), v))
     }
     return AWARDS_MAP
 }
@@ -144,6 +145,23 @@ async function attemptPlacingGame(gameId: number, i: number = 0) {
     }
 }
 
+function givenAwards(gameId: number) {
+    let awards = AWARDS_MAP.get(gameId) || []
+    return awards;
+}
+
+function giveAward(gameId: number, user: string, awardKey: string) {
+    let awards = givenAwards(gameId)
+    let found = awards.find(a => a.byUser === user && a.key === awardKey)
+    let count = awards.filter(a => a.key === awardKey).length;
+    if (found) {
+        return count
+    }
+    AWARDS_MAP.set(gameId, [...awards, {key: awardKey, byUser: user}])
+    server.postAward(gameId, user, awardKey)
+    return count + 1
+}
+
 
 export let storage = {
     init,
@@ -154,6 +172,8 @@ export let storage = {
     attemptPlacingGame,
     hexGrid,
     gameAt,
-    gameById
+    gameById,
+    givenAwards,
+    giveAward,
 } as const
 

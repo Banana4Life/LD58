@@ -96,7 +96,7 @@ async function fetchGivenAwards(jam: String){
     console.log("GET", url)
     return fetch(url)
         .then(r => r.json())
-        .then(r => new Map<string, GivenAward[]>(Object.entries(r)))
+        .then(r => new Map<string, GivenAward[]>(Object.entries(r))) // TODO
 }
 
 async function postAward(gameId: number, user: string, awardKey: string){

@@ -6,6 +6,7 @@ import emptyStar from './assets/empty-star.svg';
 import award1 from './assets/award-1.svg';
 import award2 from './assets/award-2.svg';
 import award3 from './assets/award-3.svg';
+import certificate from './assets/certificate.svg';
 
 
 const LOCALSTORAGE_USER = "user";
@@ -223,7 +224,7 @@ function askEmbedd(current: GameInfo | null) {
 function openOkDialog(textContent: string, cb: (() => void) | null = null) {
     dlgOk.querySelector(".content")!.textContent = textContent;
     dlgOkCb = cb;
-    dlgOk.show()
+    dlgOk.showModal()
     console.log("open ok", textContent)
 }
 
@@ -308,10 +309,13 @@ function openWebGame(url: string | undefined) {
 
 function openAwards() {
     let content = dlgAwards.querySelector(".content");
+    let givenAwards = storage.givenAwards(currentGameId())
+    console.log("open", givenAwards)
     content!.innerHTML = storage.awards().map(award => {
         const awardObjects = [award1, award2, award3]
-        let awIdx = Math.floor(Math.random() * awardObjects.length);
+        const awIdx = Math.floor(Math.random() * awardObjects.length);
         const randomAwardObject = awardObjects[awIdx]
+        let cnt = givenAwards.filter(givenAward => givenAward.key === award.key).length
         return `<button data-award="${award.key}">
                         <div class="bg">
                             <img class="aw-${awIdx}" src="${randomAwardObject}">
@@ -319,16 +323,22 @@ function openAwards() {
                         <div class="bg icon">
                             <div class="aw-${awIdx}">${award.icon}</div>
                         </div>
+                        
                         <div class="name">${award.name}</div>
+                        
+                        <div class="bg count">
+                            <img src="${certificate}">
+                        </div>
+                        <div class="bg count">
+                            <span>${cnt}</span>
+                        </div>
                     </button>`
     }).join("")
     for (let btn of content!.querySelectorAll("button")) {
         btn.addEventListener("click", () => {
-
-            server.postAward(currentGameId(), currentUser(), btn.dataset.award!)
-
-        }
-        )
+            let newCount = storage.giveAward(currentGameId(), currentUser(), btn.dataset.award!)
+            btn.querySelector(".bg.count span")!.textContent = newCount.toString();
+        })
     }
 
     dlgAwards.showModal()
