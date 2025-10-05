@@ -19,6 +19,20 @@ export function keyToCoord(key: string): CubeCoord {
     return new CubeCoord(Number(q), Number(r))
 }
 
+async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> {
+    let coolGames = Array.from(GAMES_BY_ID.values()).sort((a, b) => b.cool - a.cool)
+
+    const next = coolGames.find(g => !GAMES_BY_ID.has(g.id))
+
+    if (next) {
+        let result = await setGame(coord, next.id)
+        if (result === next.id) {
+            return next
+        }
+    }
+    return undefined;
+}
+
 function nextFreeCoord() {
     for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 10)) {
         if (!HEX_GRID.get(coordToKey(cubeCoord))) {
@@ -90,6 +104,7 @@ export let storage = {
     init,
     gameCount: () => JAM_STATS?.published,
     nextFreeCoord,
+    placeNextGameAt,
     setGame,
     gameCoordById,
     hexGrid,
