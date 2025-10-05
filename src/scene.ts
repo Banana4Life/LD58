@@ -6,7 +6,8 @@ import {
     Clock,
     Color,
     ColorRepresentation,
-    HemisphereLight,
+    DirectionalLight,
+    Matrix4,
     Mesh,
     MeshLambertMaterial,
     MeshPhongMaterial,
@@ -16,7 +17,6 @@ import {
     Raycaster,
     RepeatWrapping,
     Scene,
-    SpotLight,
     Texture,
     TextureLoader,
     Vector2,
@@ -29,6 +29,7 @@ import {coordToKey, storage} from "./storage.ts";
 import {ui} from "./ui.ts";
 import {Textures} from "./textures.ts";
 import {Sounds} from "./sounds.ts";
+import {PCFSoftShadowMap} from "three/src/constants";
 
 const selectedHeight = 10
 
@@ -92,6 +93,16 @@ function asTileObjectData(data: any): TileObjectData | undefined {
     return undefined
 }
 
+function enableShadows(obj: Object3D) {
+    obj.traverse(o => {
+        // noinspection SuspiciousTypeOfGuard
+        if (o instanceof Mesh) {
+            o.receiveShadow = true
+            o.castShadow = true
+        }
+    })
+}
+
 function setCoverImage(obj: Object3D, textureLoader: TextureLoader, coverUrl: string | null): Promise<void> {
     const childMesh = obj.children[0] as Mesh
     let targetMaterials = ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"];
@@ -113,6 +124,7 @@ function setCoverImage(obj: Object3D, textureLoader: TextureLoader, coverUrl: st
 
 function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null, fallFrom: number, fallDuration?: number, initialLevel: number = 0): Object3D {
     const hex = Models.Hexagon.object.clone(true);
+    enableShadows(hex)
     // noinspection UnnecessaryLocalVariableJS
     const data: TileObjectData = {
         coord,
@@ -264,20 +276,64 @@ function setupControls(camera: Camera, renderer: WebGLRenderer) {
     orbitControls.update()
 }
 
-function setupLight(scene: Scene, camera: Camera) {
-    const hemisphereLight = new HemisphereLight( Color.NAMES.white, Color.NAMES.white, .4);
-    hemisphereLight.castShadow = true
-    scene.add(hemisphereLight)
+function setupLight(scene: Scene, camera: Camera): Updater {
+    const directionalLight = new DirectionalLight( Color.NAMES.white, .7);
+    directionalLight.position.set(0, 200, 0)
+    directionalLight.target = camera
+    directionalLight.castShadow = true
+    const mapSize = Math.pow(2, 11)
+    directionalLight.shadow.mapSize.width = mapSize
+    directionalLight.shadow.mapSize.height = mapSize
+    directionalLight.shadow.bias = -0.01
+    scene.add(directionalLight)
 
-    const spotTarget = new Object3D()
-    scene.add(spotTarget)
-    let spotLight = new SpotLight(Color.NAMES.white, 10000, 0, Math.PI/2);
-    spotLight.castShadow = true
-    camera.add(spotLight)
-    spotLight.position.set(0,0,100);
-    spotLight.target = camera;
-    spotLight.castShadow = true
+    const corners = [
+        new Vector3(-1, -1, -1),
+        new Vector3( 1, -1, -1),
+        new Vector3(-1,  1, -1),
+        new Vector3( 1,  1, -1),
+        new Vector3(-1, -1,  1),
+        new Vector3( 1, -1,  1),
+        new Vector3(-1,  1,  1),
+        new Vector3( 1,  1,  1)
+    ];
 
+    const _tmpMat4A = new Matrix4();
+    const _tmpMat4B = new Matrix4();
+    const _tmpVec3 = new Vector3();
+    const _box = new Box3();
+
+    function fitDirectionalLightToCamera(dirLight: DirectionalLight, camera: Camera) {
+        const lightCam = dirLight.shadow.camera;
+
+        _tmpMat4A.copy(camera.projectionMatrix).invert();
+        _tmpMat4B.multiplyMatrices(camera.matrixWorld, _tmpMat4A);
+
+        _box.makeEmpty();
+
+        const lightViewMatrix = lightCam.matrixWorldInverse;
+
+        for (let i = 0; i < 8; i++) {
+            _tmpVec3.copy(corners[i]).applyMatrix4(_tmpMat4B)
+            _tmpVec3.applyMatrix4(lightViewMatrix)
+            _box.expandByPoint(_tmpVec3)
+        }
+
+        lightCam.left   = _box.min.x
+        lightCam.right  = _box.max.x
+        lightCam.bottom = _box.min.y
+        lightCam.top    = _box.max.y
+        lightCam.near   = -_box.max.z
+        lightCam.far    = -_box.min.z
+        lightCam.updateProjectionMatrix()
+    }
+
+    return () => {
+        fitDirectionalLightToCamera(directionalLight, camera)
+        const xOffset = 40
+        const zOffset = 20
+        directionalLight.position.set(camera.position.x - xOffset, camera.position.y + 30, camera.position.z + zOffset)
+    }
 }
 
 let currentTile: Object3D | undefined = undefined
@@ -334,12 +390,15 @@ export async function setupScene()
     const renderer = new WebGLRenderer({
         antialias: true
     });
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = PCFSoftShadowMap
+
     const audioListener = new AudioListener()
     scene.add(audioListener)
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    setupLight(scene, camera)
+    const updateLight = setupLight(scene, camera)
     setupControls(camera, renderer)
 
     const [spawnTiles, enqueueTile] = tileSpawner(scene, 10)
@@ -396,6 +455,7 @@ export async function setupScene()
     function animate(): void {
         const dt = clock.getDelta()
 
+        updateLight(dt)
         spawnTiles(dt)
         updateGameSurface(dt)
 
