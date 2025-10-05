@@ -431,11 +431,14 @@ export async function setupScene()
                         if (!trySelectTile(data.coord, parent)) {
                             const info = await storage.placeNextGameAt(data.coord)
                             if (info && info.cover) {
+                                parent.position.y += selectedHeight
                                 unselectCurrentTile()
-                                const newObj = createHex(data.coord, textureLoader, info?.cover, camWorldPos.y, 1, selectedHeight)
+                                const newObj = createHex(data.coord, textureLoader, info?.cover, camWorldPos.y, 1, parent.position.y)
                                 asTileObjectData(newObj.userData)
                                     ?.textureLoaded
-                                    ?.then(() => Sounds.DropSlap.prepare(audioListener))
+                                    ?.then(() => {
+                                        return Sounds.DropSlap.prepare(audioListener)
+                                    })
                                 ?.then(play => enqueueTile(newObj, true).then(() => play))
                                     ?.then(play => {
                                     play()
