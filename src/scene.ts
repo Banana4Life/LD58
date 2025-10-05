@@ -1,6 +1,6 @@
 import {Models} from "./models";
 import {
-    Box3,
+    Box3, Clock,
     Color,
     ColorRepresentation,
     DirectionalLight,
@@ -10,7 +10,6 @@ import {
     MeshPhongMaterial,
     Object3D,
     PerspectiveCamera,
-    Quaternion,
     Raycaster,
     Scene,
     Texture,
@@ -32,7 +31,7 @@ function getSize(obj: Object3D): Vector3 {
 
 const HEX_GRID_OBJ = new Map<string, Object3D>()
 
-const gridSize = getSize(Models.Hexagon)
+const gridSize = getSize(Models.Hexagon.object)
 
 function setTexture(mesh: Mesh, names: string[], texture: Texture, tint: ColorRepresentation) {
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
@@ -61,6 +60,8 @@ function setTexture(mesh: Mesh, names: string[], texture: Texture, tint: ColorRe
 
 interface TileObjectData {
     coord: CubeCoord
+    targetLevel: number
+    initialLevel: number
 }
 
 function isTileObjectData(data: any): data is TileObjectData {
@@ -76,21 +77,39 @@ function setCoverImage(obj: Object3D, textureLoader: TextureLoader, _coverUrl: s
     })
 }
 
-function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null): Object3D {
-    const hex = Models.Hexagon.clone(true);
+function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null, fallFrom: number): Object3D {
+    const hex = Models.Hexagon.object.clone(true);
+    const targetLevel = 0
     hex.userData = {
         coord,
+        targetLevel: targetLevel,
+        initialLevel: fallFrom,
     } as TileObjectData
     setCoverImage(hex, textureLoader, coverUrl)
-
-    const a = new Quaternion()
-    a.setFromAxisAngle({x: 1, y: 0, z: 0}, Math.PI / 2);
-    const b = new Quaternion()
-    b.setFromAxisAngle({x: 0, y: 0, z: 1}, Math.PI / 3);
-    hex.setRotationFromQuaternion(a.multiply(b))
-    const {x, y, z} = coord.toWorld(0, {x: gridSize.x, y: 0, z: gridSize.y})
+    hex.setRotationFromQuaternion(Models.Hexagon.rotationToFlatten)
+    const {x, y, z} = coord.toWorld(fallFrom, {x: gridSize.x, y: 0, z: gridSize.y})
     hex.position.set(x, y, z)
     return hex
+}
+
+function tileSpawner(scene: Scene, tilesPerSecond: number): [(dt: DOMHighResTimeStamp) => void, (obj: Object3D) => void] {
+    let tileDelay = 1/tilesPerSecond
+    const tileQueue: Object3D[] = []
+
+    const f = (dt: DOMHighResTimeStamp) => {
+        if (tileDelay <= 0) {
+            const queuedTile = tileQueue.shift()
+            if (queuedTile != null) {
+                scene.add(queuedTile)
+            }
+            tileDelay = 1/tilesPerSecond
+        }
+        if (tileDelay > 0) {
+            tileDelay -= dt
+        }
+    }
+
+    return [f, tileQueue.push.bind(tileQueue)]
 }
 
 export async function setupScene()
@@ -134,21 +153,21 @@ export async function setupScene()
     orbitControls.listenToKeyEvents(window)
     orbitControls.update()
 
+    const [spawnTiles, enqueueTile] = tileSpawner(scene, 10)
+
     // const material = new MeshBasicMaterial({
     //     color: Color.NAMES.green,
     // });
     // const plane = new Mesh(new PlaneGeometry(10, 10), material)
     // plane.rotation.setFromRotationMatrix()
     const serverGrid = await storage.hexGrid()
-    for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 6)) {
+    for (let cubeCoord of CubeCoord.ORIGIN.shuffledRingsAround(0, 6)) {
         const gameId = serverGrid.get(coordToKey(cubeCoord))
         const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
-        let hexObj = createHex(cubeCoord, textureLoader, coverUrl);
+        let hexObj = createHex(cubeCoord, textureLoader, coverUrl, 0);
         HEX_GRID_OBJ.set(coordToKey(cubeCoord), hexObj)
-        scene.add(hexObj);
+        enqueueTile(hexObj);
     }
-
-    //const clock = new Clock()
 
     renderer.domElement.addEventListener('click', async () => {
         const intersects = raycaster.intersectObjects( scene.children, true );
@@ -170,9 +189,12 @@ export async function setupScene()
     })
 
 
+    const clock = new Clock()
     function animate(): void {
-        //const dt = clock.getDelta()
+        const dt = clock.getDelta()
 
+
+        spawnTiles(dt)
         raycaster.setFromCamera( pointer, camera );
         renderer.render(scene, camera);
 
