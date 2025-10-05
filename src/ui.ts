@@ -266,9 +266,9 @@ function saveUserName(e: SubmitEvent) {
 }
 
 function setDatasetStars(rating: number, dlg: HTMLDialogElement) {
-    let starIndex = Math.floor((rating / 2) - 1);
+    let starIndex = Math.ceil((rating / 2) - 1);
     dlg.dataset.rating = starIndex.toString()
-    dlg.dataset.halfRating = (Math.floor(rating % 2) === 1).toString()
+    dlg.dataset.halfRating = (rating % 2 === 1).toString()
 }
 
 async function openGameInfo(gameId: number) {
@@ -378,7 +378,8 @@ async function submitRating() {
     let index = parseInt(dlgRating.dataset.rating || "-1")
     let half = dlgRating.dataset.halfRating === "true"
 
-    await storage.setUserRating(gameId, currentUser(), ((index + 1) * 2) + (half ? 1 : 0))
+    let newRating = ((index + 1) * 2) - (half ? 1 : 0);
+    await storage.setUserRating(gameId, currentUser(), newRating)
 
     dlgRating.close()
     let rating = await server.fetchGameRating(gameId)

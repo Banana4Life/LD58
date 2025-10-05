@@ -38,6 +38,7 @@ canvas {
         display: flex;
         gap: 5px;
         button {
+            cursor: pointer;
             background: blue;
             border: none;
             color: white;
