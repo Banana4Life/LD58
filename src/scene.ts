@@ -1,12 +1,11 @@
 import {Models} from "./models";
 import {
-    AmbientLight,
     Box3,
-    Color,
-    GridHelper,
+    Color, ColorRepresentation, DirectionalLight,
+    GridHelper, HemisphereLight, Mesh, MeshLambertMaterial, MeshPhongMaterial,
     Object3D,
-    PerspectiveCamera,
-    Scene,
+    PerspectiveCamera, Quaternion,
+    Scene, Texture, TextureLoader,
     Vector3,
     WebGLRenderer
 } from "three";
@@ -22,9 +21,40 @@ function getSize(obj: Object3D): Vector3 {
 
 const gridSize = getSize(Models.Hexagon)
 
-function createHex(coord: CubeCoord): Object3D {
+function setTexture(mesh: Mesh, names: string[], texture: Texture, tint: ColorRepresentation) {
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+    for (let material of materials) {
+        if (names.indexOf(material.name) !== -1) {
+            if (material instanceof MeshPhongMaterial) {
+                material.map = texture
+                material.color = new Color(tint)
+                material.specular = new Color(tint)
+                material.shininess = 20
+                material.flatShading = true
+                material.needsUpdate = true
+            } else if (material instanceof MeshLambertMaterial) {
+                material.map = texture
+                material.color = new Color(tint)
+                material.needsUpdate = true
+            }
+        }
+    }
+}
+
+function createHex(coord: CubeCoord, textureLoader: TextureLoader): Object3D {
     const hex = Models.Hexagon.clone();
-    hex.quaternion.setFromAxisAngle({x: 1, y: 0, z: 0}, Math.PI / 2);
+
+    const childMesh = hex.children[0] as Mesh
+    const texture = textureLoader.load("https://banana4.life/ld58/imageProxy/aHR0cHM6Ly9zdGF0aWMuamFtLmhvc3QvY29udGVudC82MjEvei8xNzRmZi5qcGcuNDgweDM4NC5maXQuanBn.404186b38e0e43ab2456896b32af2f1668556ab8", (t) => {
+        t.anisotropy = 16
+    })
+    setTexture(childMesh, ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"], texture, Color.NAMES.white)
+
+    const a = new Quaternion()
+    a.setFromAxisAngle({x: 1, y: 0, z: 0}, Math.PI / 2);
+    const b = new Quaternion()
+    b.setFromAxisAngle({x: 0, y: 0, z: 1}, Math.PI / 3);
+    hex.setRotationFromQuaternion(a.multiply(b))
     const {x, y, z} = coord.toWorld(0, {x: gridSize.x, y: 0, z: gridSize.y})
     hex.position.set(x, y, z)
     return hex
@@ -32,6 +62,7 @@ function createHex(coord: CubeCoord): Object3D {
 
 export function setupScene()
 {
+    const textureLoader = new TextureLoader()
     // Scene setup
     const scene = new Scene();
     scene.background = new Color(Color.NAMES.red)
@@ -48,7 +79,10 @@ export function setupScene()
     grid.material.transparent = true;
     scene.add( grid );
 
-    const light = new AmbientLight(Color.NAMES.white, 5.0)
+    // const light = new AmbientLight(Color.NAMES.white, 5.0)
+    // const light = new DirectionalLight(Color.NAMES.white, 0.5)
+    scene.add(new DirectionalLight(Color.NAMES.white, 0.05))
+    const light = new HemisphereLight( Color.NAMES.white, 0x00ff00, 1 );
     scene.add(light)
 
     const orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -69,9 +103,8 @@ export function setupScene()
     // });
     // const plane = new Mesh(new PlaneGeometry(10, 10), material)
     // plane.rotation.setFromRotationMatrix()
-    console.log([...CubeCoord.ORIGIN.spiralAround(0, 40)].length)
     for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 40)) {
-        scene.add(createHex(cubeCoord));
+        scene.add(createHex(cubeCoord, textureLoader));
     }
 
     //const clock = new Clock()
