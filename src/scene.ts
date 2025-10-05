@@ -61,76 +61,90 @@ function setTexture(mesh: Mesh, names: string[], texture: Texture, tint: ColorRe
 }
 
 interface TileObjectData {
-    coord: CubeCoord
-    targetLevel: number
-    initialLevel: number
-    fallingTime: number
+    readonly coord: CubeCoord
+    readonly targetLevel: number
+    readonly initialLevel: number
+    readonly textureLoaded: Promise<Texture>
 }
 
 function isTileObjectData(data: any): data is TileObjectData {
     return 'coord' in data
 }
 
-function setCoverImage(obj: Object3D, textureLoader: TextureLoader, _coverUrl: string | null) {
+function asTileObjectData(data: any): TileObjectData | undefined {
+    if (isTileObjectData(data)) {
+        return data
+    }
+    return undefined
+}
+
+function setCoverImage(obj: Object3D, textureLoader: TextureLoader, _coverUrl: string | null): Promise<Texture> {
     const coverUrl = !!_coverUrl ? _coverUrl : "https://banana4.life/ld58/imageProxy/aHR0cHM6Ly9zdGF0aWMuamFtLmhvc3QvY29udGVudC82MjEvei8xNzRmZi5qcGcuNDgweDM4NC5maXQuanBn.404186b38e0e43ab2456896b32af2f1668556ab8"
     const childMesh = obj.children[0] as Mesh
-    textureLoader.load(coverUrl, (t) => {
-        t.anisotropy = 16
-        setTexture(childMesh, ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"], t, Color.NAMES.white)
+    return new Promise(resolve => {
+        textureLoader.load(coverUrl, (t) => {
+            t.anisotropy = 16
+            setTexture(childMesh, ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"], t, Color.NAMES.white)
+            resolve(t)
+        })
     })
 }
 
 function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null, fallFrom: number): Object3D {
     const hex = Models.Hexagon.object.clone(true);
     const targetLevel = 0
-    hex.userData = {
+    const data: TileObjectData = {
         coord,
         targetLevel: targetLevel,
         initialLevel: fallFrom,
-        fallingTime: 0,
-    } as TileObjectData
-    setCoverImage(hex, textureLoader, coverUrl)
+        textureLoaded: setCoverImage(hex, textureLoader, coverUrl)
+    }
+    hex.userData = data
+
     hex.setRotationFromQuaternion(Models.Hexagon.rotationToFlatten)
     const {x, y, z} = coord.toWorld(fallFrom, {x: gridSize.x, y: 0, z: gridSize.y})
     hex.position.set(x, y, z)
     return hex
 }
 
-function tileSpawner(scene: Scene, tilesPerSecond: number, fallDampening: number): [(dt: DOMHighResTimeStamp) => void, (obj: Object3D) => void] {
+function tileSpawner(scene: Scene, tilesPerSecond: number, fallDampening: number): [(dt: DOMHighResTimeStamp) => void, (obj: Object3D, next?: boolean) => Promise<void>] {
     let tileDelay = 1/tilesPerSecond
-    const tileQueue: Object3D[] = []
+    const tileQueue: [Object3D, () => void][] = []
 
-    const falling = new Set<number>()
-    const epsilon = 0.001
+    const falling = new Map<number, () => void>()
+    const epsilon = 0.05
 
-    const f = (dt: DOMHighResTimeStamp) => {
-        for (let id of falling) {
+    const update = (dt: DOMHighResTimeStamp) => {
+        for (let [id, resolve] of falling) {
             const obj = scene.getObjectById(id)
             if (!obj) {
                 falling.delete(id)
+                resolve()
                 continue
             }
             const userData = obj.userData
             if (!isTileObjectData(userData)) {
                 falling.delete(id)
+                resolve()
                 continue
             }
             if (obj.position.y - epsilon <= userData.targetLevel) {
                 obj.position.setY(userData.targetLevel)
                 falling.delete(id)
+                resolve()
                 continue
             }
 
 
             //obj.position.setY(lerp(userData.initialLevel, userData.targetLevel, smootherstep(userData.fallingTime, 0, fallDuration)))
             obj.position.setY(damp(obj.position.y, userData.targetLevel, fallDampening, dt))
-            userData.fallingTime += dt
         }
 
         if (tileDelay <= 0) {
-            const queuedTile = tileQueue.shift()
-            if (queuedTile != null) {
-                falling.add(queuedTile.id)
+            const item = tileQueue.shift()
+            if (item) {
+                const [queuedTile, resolve] = item
+                falling.set(queuedTile.id, resolve)
                 scene.add(queuedTile)
             }
             tileDelay = 1/tilesPerSecond
@@ -140,7 +154,18 @@ function tileSpawner(scene: Scene, tilesPerSecond: number, fallDampening: number
         }
     }
 
-    return [f, tileQueue.push.bind(tileQueue)]
+    const spawn = (t: Object3D, next?: boolean) => {
+        return new Promise<void>(resolve => {
+            const item: [Object3D, () => void] = [t, resolve]
+            if (next) {
+                tileQueue.unshift(item)
+            } else {
+                tileQueue.push(item)
+            }
+        })
+    }
+
+    return [update, spawn]
 }
 
 export async function setupScene()
@@ -210,7 +235,11 @@ export async function setupScene()
                     if (isTileObjectData(data)) {
                         const info = await storage.placeNextGameAt(data.coord)
                         if (info && info.cover) {
-                            setCoverImage(parent, textureLoader, info.cover)
+                            const newObj = createHex(data.coord, textureLoader, info?.cover, 100)
+                            asTileObjectData(newObj.userData)
+                                ?.textureLoaded
+                                ?.then(() => enqueueTile(newObj, true))
+                                ?.then(() => parent.removeFromParent())
                         }
                         break
                     }
