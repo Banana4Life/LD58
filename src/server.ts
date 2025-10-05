@@ -15,10 +15,6 @@ export interface UserGames {
     games: GameInfo[]
 }
 
-export interface JamGames {
-    games: GameInfo[]
-}
-
 export interface JamStats {
     id: number,
     canGrade: boolean,

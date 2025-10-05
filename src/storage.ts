@@ -3,7 +3,7 @@ import {fetchHexGrid, fetchJamStats, findGames, GameInfo, JamStats, postHexGridG
 import {scene} from "./scene.ts";
 import {TextureLoader} from "three";
 
-export const JAM_NAME = "56";
+export const JAM_NAME = "58";
 
 const HEX_GRID = new Map<string, number>
 const COORD_BY_GAMEID = new Map<number, string>
@@ -30,7 +30,11 @@ async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> 
         if (result === next.id) {
             return next
         }
+        if (result == 0) {
+            await hexGrid()
+        }
     } else {
+        console.log("No next game available. Try Fetching more...")
         await allGames()
     }
 
@@ -38,7 +42,7 @@ async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> 
 }
 
 function nextFreeCoord() {
-    for (let cubeCoord of CubeCoord.ORIGIN.spiralAround(0, 10)) {
+    for (let cubeCoord of CubeCoord.ORIGIN.shuffledRingsAround(0, 10)) {
         if (!HEX_GRID.get(coordToKey(cubeCoord))) {
             return cubeCoord
         }
@@ -79,7 +83,7 @@ async function setGame(coord: CubeCoord, gameId: number) {
         console.log("Post Hex Grid Success!", coord, gameId)
     } else {
         HEX_GRID.set(coordToKey(coord), result)
-        console.log("Post Hex Grid Failed!", coord, "expected", gameId, "found", result)
+        console.log("Post Hex Grid Failed!", coord, "expected", gameId, "found", result == 0 ? "already placed" : result)
     }
     return result
 }
@@ -103,7 +107,7 @@ function gameById(gameId: number): GameInfo {
 }
 
 async function attemptPlacingGame(gameId: number, i: number = 0) {
-    let coord = nextFreeCoord(); // TODO shuffled rings
+    let coord = nextFreeCoord();
     let result = await setGame(coord, gameId)
     if (result === gameId) {
         let hexObj = scene.hexObj(coord);
