@@ -25,6 +25,14 @@ let btnChangeUser = document.querySelector("#btn-change-user")!;
 btnChangeUser.addEventListener("click", openUsernameDialog)
 
 
+let dlgGame = document.querySelector<HTMLDialogElement>("#dlg-game")!;
+
+document.addEventListener("click", (e) => {
+    if (dlgGame.open && dlgGame.contains(e.target as Node)) {
+        dlgGame.close()
+    }
+})
+
 async function updateNamePlate(user: string) {
     console.log("Welcome", user)
     playerNamePlate.querySelector(".player-name")!.textContent = user;
@@ -122,3 +130,15 @@ function saveUserName(e: SubmitEvent) {
     }
     dlgUserName.close()
 }
+
+function clickGame(gameId: number) {
+    console.log("Open Game", gameId)
+    let info = storage.gameById(gameId)
+    dlgGame.querySelector(".content")!.textContent = info.name
+    dlgGame.show()
+}
+
+
+export let ui = {
+    clickGame
+} as const

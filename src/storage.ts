@@ -106,6 +106,10 @@ function gameById(gameId: number): GameInfo {
     throw new Error("Game not found " + gameId)
 }
 
+function gameAt(coord: CubeCoord) {
+    return HEX_GRID.get(coordToKey(coord))
+}
+
 async function attemptPlacingGame(gameId: number, i: number = 0) {
     let coord = nextFreeCoord();
     let result = await setGame(coord, gameId)
@@ -132,6 +136,7 @@ export let storage = {
     gameCoordById,
     attemptPlacingGame,
     hexGrid,
+    gameAt,
     gameById
 } as const
 

@@ -23,6 +23,7 @@ import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {CubeCoord} from "./util/tilegrid.ts";
 import {coordToKey, storage} from "./storage.ts";
 import {damp} from "three/src/math/MathUtils";
+import {ui} from "./ui.ts";
 
 function getSize(obj: Object3D): Vector3 {
     const bounds = new Box3().setFromObject(obj)
@@ -233,13 +234,18 @@ export async function setupScene()
                 if (parent) {
                     const data = parent.userData
                     if (isTileObjectData(data)) {
-                        const info = await storage.placeNextGameAt(data.coord)
-                        if (info && info.cover) {
-                            const newObj = createHex(data.coord, textureLoader, info?.cover, 100)
-                            asTileObjectData(newObj.userData)
-                                ?.textureLoaded
-                                ?.then(() => enqueueTile(newObj, true))
-                                ?.then(() => parent.removeFromParent())
+                        let gameAt = storage.gameAt(data.coord);
+                        if (gameAt) {
+                            ui.clickGame(gameAt)
+                        } else {
+                            const info = await storage.placeNextGameAt(data.coord)
+                            if (info && info.cover) {
+                                const newObj = createHex(data.coord, textureLoader, info?.cover, 100)
+                                asTileObjectData(newObj.userData)
+                                    ?.textureLoaded
+                                    ?.then(() => enqueueTile(newObj, true))
+                                    ?.then(() => parent.removeFromParent())
+                            }
                         }
                         break
                     }
