@@ -8,7 +8,6 @@ import {
     DirectionalLight,
     HemisphereLight,
     Mesh,
-    MeshBasicMaterial,
     MeshLambertMaterial,
     MeshPhongMaterial,
     Object3D,
@@ -262,7 +261,12 @@ export async function setupScene()
     backgroundTexture.wrapT = RepeatWrapping;
     backgroundTexture.repeat.set(3, 3);
     const backgroundPlane = new PlaneGeometry(window.innerWidth, window.innerHeight)
-    const backgroundPlaneMaterial = new MeshBasicMaterial({map: backgroundTexture, color: Color.NAMES.white})
+    const backgroundPlaneMaterial = new MeshPhongMaterial({
+        map: backgroundTexture,
+        color: Color.NAMES.white,
+        specular: Color.NAMES.white,
+        shininess: 10,
+    })
     const backgroundMesh = new Mesh(backgroundPlane, backgroundPlaneMaterial)
     backgroundMesh.rotateX(-Math.PI/2)
     backgroundMesh.position.set(0, 0, -100)
