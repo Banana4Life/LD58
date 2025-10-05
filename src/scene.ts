@@ -2,6 +2,7 @@ import {Models} from "./models";
 import {
     AudioListener,
     Box3,
+    Camera,
     Clock,
     Color,
     ColorRepresentation,
@@ -127,7 +128,9 @@ function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: str
     return hex
 }
 
-function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number = 2): [(dt: DOMHighResTimeStamp) => void, (obj: Object3D, next?: boolean) => Promise<void>] {
+type Updater = (dt: DOMHighResTimeStamp) => void
+
+function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number = 2): [Updater, (obj: Object3D, next?: boolean) => Promise<void>] {
 
     function initialSpeed(acceleration: number, height: number, durationSeconds: number): number {
         return -((acceleration * durationSeconds / 2) - ((height / durationSeconds)))
@@ -173,7 +176,6 @@ function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number 
             // obj.position.setY(lerp(userData.initialLevel, userData.targetLevel, smootherstep(state.fallingTime, 0, fallDuration)))
             // obj.position.setY(Math.max(0, lerp(userData.initialLevel, userData.targetLevel, state.fallingTime / state.fallDuration)))
             // obj.position.setY(damp(obj.position.y, userData.targetLevel, fallDuration, dt))
-            console.log(obj.position.y)
             obj.position.setY(Math.max(0, obj.position.y - (state.speed * dt)))
             state.speed += g * dt
             state.fallingTime += dt
@@ -213,6 +215,54 @@ function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number 
     return [update, spawn]
 }
 
+function gameSurface(scene: Scene, camera: Camera): Updater {
+    const backgroundTexture = Textures.Background.clone()
+    backgroundTexture.wrapS = RepeatWrapping;
+    backgroundTexture.wrapT = RepeatWrapping;
+    backgroundTexture.repeat.set(3, 3);
+    const backgroundPlane = new PlaneGeometry(window.innerWidth, window.innerHeight)
+    const backgroundPlaneMaterial = new MeshPhongMaterial({
+        map: backgroundTexture,
+        color: Color.NAMES.white,
+        specular: Color.NAMES.white,
+        shininess: 10,
+    })
+    const backgroundMesh = new Mesh(backgroundPlane, backgroundPlaneMaterial)
+    backgroundMesh.receiveShadow = true
+    backgroundMesh.rotateX(-Math.PI/2)
+    backgroundMesh.position.set(0, 0, -100)
+    scene.add(backgroundMesh)
+
+    const previousCameraPosition = camera.position.clone()
+    return () => {
+        backgroundMesh.position.x = camera.position.x
+        backgroundMesh.position.z = camera.position.z
+
+        const deltaX = previousCameraPosition.x - camera.position.x
+        const deltaZ = camera.position.z - previousCameraPosition.z
+
+        backgroundTexture.offset.x -= deltaX * (backgroundTexture.repeat.x / backgroundPlane.parameters.width)
+        backgroundTexture.offset.y -= deltaZ * (backgroundTexture.repeat.y / backgroundPlane.parameters.height)
+
+        previousCameraPosition.copy(camera.position)
+    }
+}
+
+function setupControls(camera: Camera, renderer: WebGLRenderer) {
+    const orbitControls = new OrbitControls(camera, renderer.domElement);
+    orbitControls.enableRotate = false
+    orbitControls.enableZoom = true
+    orbitControls.screenSpacePanning = false
+    orbitControls.minAzimuthAngle = 0
+    orbitControls.maxAzimuthAngle = 0
+    orbitControls.minPolarAngle = Math.PI / 10
+    orbitControls.maxPolarAngle = orbitControls.minPolarAngle
+    orbitControls.minDistance = 100
+    orbitControls.maxDistance = 200
+    orbitControls.listenToKeyEvents(window)
+    orbitControls.update()
+}
+
 export async function setupScene()
 {
     const pointer = new Vector2()
@@ -243,36 +293,10 @@ export async function setupScene()
     const light = new HemisphereLight( Color.NAMES.white, Color.NAMES.white, 1);
     scene.add(light)
 
-    const orbitControls = new OrbitControls(camera, renderer.domElement);
-    orbitControls.enableRotate = false
-    orbitControls.enableZoom = true
-    orbitControls.screenSpacePanning = false
-    orbitControls.minAzimuthAngle = 0
-    orbitControls.maxAzimuthAngle = 0
-    orbitControls.minPolarAngle = Math.PI / 10
-    orbitControls.maxPolarAngle = orbitControls.minPolarAngle
-    orbitControls.minDistance = 100
-    orbitControls.maxDistance = 200
-    orbitControls.listenToKeyEvents(window)
-    orbitControls.update()
-
-    const backgroundTexture = Textures.Background.clone()
-    backgroundTexture.wrapS = RepeatWrapping;
-    backgroundTexture.wrapT = RepeatWrapping;
-    backgroundTexture.repeat.set(3, 3);
-    const backgroundPlane = new PlaneGeometry(window.innerWidth, window.innerHeight)
-    const backgroundPlaneMaterial = new MeshPhongMaterial({
-        map: backgroundTexture,
-        color: Color.NAMES.white,
-        specular: Color.NAMES.white,
-        shininess: 10,
-    })
-    const backgroundMesh = new Mesh(backgroundPlane, backgroundPlaneMaterial)
-    backgroundMesh.rotateX(-Math.PI/2)
-    backgroundMesh.position.set(0, 0, -100)
-    scene.add(backgroundMesh)
+    setupControls(camera, renderer)
 
     const [spawnTiles, enqueueTile] = tileSpawner(scene, 10)
+    const updateGameSurface = gameSurface(scene, camera)
 
     // const material = new MeshBasicMaterial({
     //     color: Color.NAMES.green,
@@ -322,24 +346,14 @@ export async function setupScene()
         }
     })
 
-    const previousCameraPosition = camera.position.clone()
     const clock = new Clock()
     function animate(): void {
         const dt = clock.getDelta()
 
         spawnTiles(dt)
+        updateGameSurface(dt)
+
         raycaster.setFromCamera( pointer, camera );
-
-        backgroundMesh.position.x = camera.position.x
-        backgroundMesh.position.z = camera.position.z
-
-        const deltaX = previousCameraPosition.x - camera.position.x
-        const deltaZ = camera.position.z - previousCameraPosition.z
-
-        backgroundTexture.offset.x -= deltaX * (backgroundTexture.repeat.x / backgroundPlane.parameters.width)
-        backgroundTexture.offset.y -= deltaZ * (backgroundTexture.repeat.y / backgroundPlane.parameters.height)
-
-        previousCameraPosition.copy(camera.position)
 
         renderer.render(scene, camera);
 

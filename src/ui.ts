@@ -277,7 +277,6 @@ function reportBrokenGame() {
 }
 
 function openRating() {
-    let gameId = parseInt(dlgGame.dataset.gameId!)
     resetRating();
     dlgRating.show()
 }
