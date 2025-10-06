@@ -30,8 +30,6 @@ import {ui} from "./ui.ts";
 import {Textures} from "./textures.ts";
 import {Sounds} from "./sounds.ts";
 import {PCFSoftShadowMap} from "three/src/constants";
-import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer";
-import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
 
 const selectedHeight = 10
 
@@ -505,8 +503,6 @@ export function setupScene()
     });
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = PCFSoftShadowMap
-    const composer = new EffectComposer(renderer)
-    composer.addPass(new RenderPass(scene, camera))
 
     const audioListener = new AudioListener()
     scene.add(audioListener)
@@ -581,16 +577,19 @@ export function setupScene()
 
         raycaster.setFromCamera( pointer, camera );
 
-        composer.render(dt);
+        renderer.render(scene, camera);
 
         requestAnimationFrame(animate);
     }
 
 // Handle window resize
     const onWindowResize = (): void => {
-        camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+        let w = canvasContainer.clientWidth;
+        let h = canvasContainer.clientHeight;
+        let a = w / h;
+        camera.aspect = a;
         camera.updateProjectionMatrix();
-        renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        renderer.setSize(w, h);
     };
 
     window.addEventListener('resize', onWindowResize, false);
