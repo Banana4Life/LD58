@@ -221,7 +221,6 @@ async function updateNamePlate(user: string) {
                 console.log(user, "your game", userGamesInfo.current.id, "is already placed @", coord)
             }
 
-            scene.updateGameIdUserDataTargetLevel(userGamesInfo.current.id, scene.selectedHeight)
             scene.selectTileByGameId(userGamesInfo.current.id)
 
             scene.loadTilesAround(coord, 4)

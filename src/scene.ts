@@ -85,6 +85,7 @@ interface TileObjectData {
     readonly initialLevel: number
     readonly textureLoaded: Promise<void>
     readonly fallDuration?: number
+    selected?: boolean
 }
 
 function isTileObjectData(data: any): data is TileObjectData {
@@ -147,31 +148,6 @@ function createHex(coord: CubeCoord, coverUrl: string | null, fallFrom: number, 
 }
 
 type Updater = (dt: DOMHighResTimeStamp) => void
-
-function updateGameIdUserDataTargetLevel(gameId: number, targetLevel: number) {
-    const coord = storage.gameCoordById(gameId);
-    if (!coord) {
-        return
-    }
-
-    const obj = hexObj(coord)
-    if (!obj) {
-        return
-    }
-
-    const userData = obj.userData
-    if (!isTileObjectData(userData)) {
-        return
-    }
-
-    obj.userData = {
-        coord: userData.coord,
-        targetLevel: targetLevel,
-        initialLevel: userData.initialLevel,
-        textureLoaded: userData.textureLoaded,
-        fallDuration: userData.fallDuration,
-    }
-}
 
 function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number = 2): [Updater, (obj: Object3D, next?: boolean) => Promise<void>, (obj: Object3D) => boolean, (tiles: Object3D[]) => void] {
 
@@ -394,10 +370,10 @@ function setupLight(scene: Scene, camera: Camera): Updater {
 }
 
 let currentTile: Object3D | undefined = undefined
-async function trySelectTile(coord: CubeCoord, tile: Object3D, isNewTile: boolean = false) {
+async function trySelectTile(coord: CubeCoord, tile: Object3D) {
     let gameId = storage.gameAt(coord)
     if (gameId) {
-        selectTile(tile, gameId, isNewTile)
+        selectTile(tile, gameId)
         return true
     }
 
@@ -414,7 +390,7 @@ async function selectTileByGameId(gameId: number) {
         return
     }
 
-    await selectTile(tile, gameId, false, false)
+    await selectTile(tile, gameId, false)
 }
 
 function moveCameraToTile(tile: Object3D) {
@@ -448,7 +424,7 @@ function moveCameraToTile(tile: Object3D) {
     animateCamera()
 }
 
-async function selectTile(tile: Object3D, gameId: number, isNewTile: boolean = false, toggle: boolean = true) {
+async function selectTile(tile: Object3D, gameId: number, toggle: boolean = true) {
     if (toggle && currentTile === tile) {
         unselectCurrentTile()
         return
@@ -456,10 +432,12 @@ async function selectTile(tile: Object3D, gameId: number, isNewTile: boolean = f
 
     unselectCurrentTile()
 
-    currentTile = tile
-    if (!isNewTile) {
-        tile.position.y += SELECTED_HEIGHT
+    const data = asTileObjectData(tile)
+    if (data) {
+        data.selected = true
     }
+
+    currentTile = tile
 
     if (!toggle) {
         moveCameraToTile(tile);
@@ -470,7 +448,10 @@ async function selectTile(tile: Object3D, gameId: number, isNewTile: boolean = f
 
 function unselectCurrentTile() {
     if (currentTile){
-        currentTile.position.y -= SELECTED_HEIGHT
+        const data = asTileObjectData(currentTile)
+        if (data) {
+            data.selected = false
+        }
         ui.closeGameInfo()
         currentTile = undefined
     }
@@ -560,19 +541,18 @@ export function setupScene()
                         if (!await trySelectTile(data.coord, parent)) {
                             const info = await storage.placeNextGameAt(data.coord)
                             if (info && info.cover) {
-                                parent.position.y += SELECTED_HEIGHT
                                 unselectCurrentTile()
-                                const newObj = createHex(data.coord, info?.cover, camWorldPos.y, 1, parent.position.y)
+                                const newObj = createHex(data.coord, info?.cover, camWorldPos.y, 1)
                                 asTileObjectData(newObj.userData)
                                     ?.textureLoaded
                                     ?.then(() => {
                                         return Sounds.DropSlap.prepare(audioListener)
                                     })
                                 ?.then(play => enqueueTile(newObj, true).then(() => play))
-                                    ?.then(async play => {
+                                ?.then(async play => {
                                     play()
                                     parent.removeFromParent()
-                                    await trySelectTile(data.coord, newObj, true)
+                                    await trySelectTile(data.coord, newObj)
                                 })
                             }
                         }
@@ -649,7 +629,6 @@ export let scene = {
     hexObj,
     setCoverImage,
     selectTileByGameId,
-    updateGameIdUserDataTargetLevel,
     selectedHeight: SELECTED_HEIGHT,
     loadTilesAround,
 }  as const
