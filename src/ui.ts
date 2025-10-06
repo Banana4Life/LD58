@@ -183,8 +183,7 @@ async function updateNamePlate(user: string) {
         ];
         const randomIndex = Math.floor(Math.random() * dialogs.length);
         const randomDialog = dialogs[randomIndex];
-        openOkDialog(randomDialog, () => {
-        });
+        openOkDialog(randomDialog, () => {});
 
     } else {
         const randomIndex = Math.floor(Math.random() * game.games.length);
@@ -193,7 +192,6 @@ async function updateNamePlate(user: string) {
         if (localStorage.getItem("bells") !== user) {
             openOkDialog(`Does ${randomGame.name} ring a bell? Good.`, () => {
                 localStorage.setItem("bells", user)
-                askEmbed(game.current)
             })
         }
 
@@ -221,14 +219,6 @@ async function updateNamePlate(user: string) {
     storage.clearUserRatingsCache()
 }
 
-
-function askEmbed(current: GameInfo | null) {
-    if (current != null) {
-        openOkDialog(`Does your current game ${current.name} support embedding?`, null)
-    }
-}
-
-
 function openOkDialog(textContent: string, cb: (() => void) | null = null) {
     dlgOk.querySelector(".content")!.textContent = textContent;
     dlgOkCb = cb;
@@ -237,12 +227,12 @@ function openOkDialog(textContent: string, cb: (() => void) | null = null) {
 }
 
 function currentUser() {
-    return localStorage.getItem(LOCALSTORAGE_USER) || '???';
+    return localStorage.getItem(LOCALSTORAGE_USER) || 'Guest';
 }
 
 async function loadUI() {
     let user = currentUser();
-    if (user === null || user === "") {
+    if (user === null || user === "" || user === "Guest") {
         openUsernameDialog()
     } else {
         updateNamePlate(user);
@@ -291,6 +281,9 @@ async function openGameInfo(gameId: number) {
 
     dlgGame.dataset.gameId = gameId.toString();
     dlgGame.querySelector(".content")!.textContent = info.name
+    dlgGame.querySelector<HTMLImageElement>(".count img")!.src = certificate;
+    let givenAwards = storage.givenAwards(currentGameId())
+    dlgGame.querySelector<HTMLImageElement>(".count span")!.innerText = givenAwards.length.toString()
 
     btbWebGameOpener.style.display = "none"
     if (info.web) {
@@ -329,7 +322,7 @@ function openWebGame(url: string | undefined) {
 function openAwards() {
     let content = dlgAwards.querySelector(".content");
     let givenAwards = storage.givenAwards(currentGameId())
-    console.log("open", givenAwards)
+    // console.log("open", givenAwards)
     content!.innerHTML = storage.awards().map(award => {
         // const awardObjects = [award1, award2, award3]
         // const awIdx = Math.floor(Math.random() * awardObjects.length);

@@ -12,7 +12,7 @@
     </div>
     <div id="player">
         <span>Player:</span>
-        <span class="player-name">???</span>
+        <span class="player-name">Guest</span>
         <button id="btn-change-user">Change</button>
 
         <span class="game">
@@ -43,7 +43,16 @@
             <div class="buttons">
                 <button class="dlg-btn-webgame">Play the game</button>
                 <button class="dlg-btn-jamgamepage">Vote & Comment</button>
-                <button class="dlg-btn-awards">Award a Trophy</button>
+                <button class="dlg-btn-awards">
+                    <span>Award a Trophy</span>
+                    <div class="count">
+                        <img src="#">
+                    </div>
+                    <div class="count">
+                        <span>0</span>
+                    </div>
+
+                </button>
             </div>
         </div>
     </div>
@@ -71,6 +80,9 @@
                     What is your LDJam username?
                 </div>
                 <input name="jamuser" autocomplete="off" type="text"/>
+                <!-- So that Browsers don't try to autocomplete -->
+                <input name = "DummyUsername" type="text" style="display:none;">
+                <input name = "DummyPassword" type="password" style="display:none;">
             </label>
         </div>
         <div class="buttons">

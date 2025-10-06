@@ -77,6 +77,26 @@ header {
         }
 
         border-bottom: 3px solid black;
+
+        .dlg-btn-awards {
+            position: relative;
+            .count {
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                width: 30px;
+                img {
+                    filter: invert(0.5) sepia(1) saturate(5) hue-rotate(400deg);
+                    width: 30px;
+                }
+                span {
+                    line-height: 28px;
+                    color: black;
+                    font-weight: 1000;
+                    font-size: 15px
+                }
+            }
+        }
     }
 
     #dlg-games {
@@ -164,6 +184,12 @@ header {
         &.has-game {
             display: block;
         }
+    }
+}
+
+#dlg-username {
+    input {
+        width: calc(100% - 10px);
     }
 }
 
