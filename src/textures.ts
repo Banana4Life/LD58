@@ -1,4 +1,4 @@
-import backgrountImage from './textures/prototype_512x512_green2.png?arraybuffer'
+import backgroundImage from './textures/noise.png?arraybuffer'
 import {Texture} from "three";
 
 function loadTexture(content: ArrayBuffer, contentType: string): Texture {
@@ -16,5 +16,5 @@ function loadTexture(content: ArrayBuffer, contentType: string): Texture {
 }
 
 export const Textures = {
-    Background: loadTexture(backgrountImage, 'image/png')
+    Background: loadTexture(backgroundImage, 'image/png')
 } as const

@@ -232,13 +232,14 @@ function gameSurface(scene: Scene, camera: Camera): Updater {
     const backgroundTexture = Textures.Background.clone()
     backgroundTexture.wrapS = RepeatWrapping;
     backgroundTexture.wrapT = RepeatWrapping;
-    backgroundTexture.repeat.set(3, 3);
+    backgroundTexture.repeat.set(100, 100);
     const backgroundPlane = new PlaneGeometry(window.innerWidth, window.innerHeight)
     const backgroundPlaneMaterial = new MeshPhongMaterial({
         map: backgroundTexture,
-        color: Color.NAMES.white,
+        color: new Color(0xFF0000),
         specular: Color.NAMES.white,
-        shininess: 10,
+        shininess: 2,
+        dithering: true
     })
     const backgroundMesh = new Mesh(backgroundPlane, backgroundPlaneMaterial)
     backgroundMesh.receiveShadow = true
