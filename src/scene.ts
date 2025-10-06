@@ -30,6 +30,8 @@ import {ui} from "./ui.ts";
 import {Textures} from "./textures.ts";
 import {Sounds} from "./sounds.ts";
 import {PCFSoftShadowMap} from "three/src/constants";
+import {EffectComposer} from "three/examples/jsm/postprocessing/EffectComposer";
+import {RenderPass} from "three/examples/jsm/postprocessing/RenderPass";
 
 const selectedHeight = 10
 
@@ -393,7 +395,7 @@ function unselectCurrentTile() {
 
 const canvasContainer = document.querySelector<HTMLElement>('.canvas-container')!
 
-export async function setupScene()
+export function setupScene()
 {
     const raycaster = new Raycaster()
 
@@ -418,6 +420,8 @@ export async function setupScene()
     });
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = PCFSoftShadowMap
+    const composer = new EffectComposer(renderer)
+    composer.addPass(new RenderPass(scene, camera))
 
     const audioListener = new AudioListener()
     scene.add(audioListener)
@@ -438,14 +442,15 @@ export async function setupScene()
     // plane.rotation.setFromRotationMatrix()
     const camWorldPos = new Vector3()
     camera.getWorldPosition(camWorldPos)
-    const serverGrid = await storage.hexGrid()
-    for (let cubeCoord of CubeCoord.ORIGIN.shuffledRingsAround(0, 6)) {
-        const gameId = serverGrid.get(coordToKey(cubeCoord))
-        const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
-        let hexObj = createHex(cubeCoord, textureLoader, coverUrl, camWorldPos.y, 0.6);
-        HEX_GRID_OBJ.set(coordToKey(cubeCoord), hexObj)
-        enqueueTile(hexObj);
-    }
+    storage.hexGrid().then(serverGrid => {
+        for (let cubeCoord of CubeCoord.ORIGIN.shuffledRingsAround(0, 6)) {
+            const gameId = serverGrid.get(coordToKey(cubeCoord))
+            const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
+            let hexObj = createHex(cubeCoord, textureLoader, coverUrl, camWorldPos.y, 0.6);
+            HEX_GRID_OBJ.set(coordToKey(cubeCoord), hexObj)
+            enqueueTile(hexObj);
+        }
+    })
 
     renderer.domElement.addEventListener('click', async () => {
         const intersects = raycaster.intersectObjects( scene.children, true );
@@ -491,7 +496,7 @@ export async function setupScene()
 
         raycaster.setFromCamera( pointer, camera );
 
-        renderer.render(scene, camera);
+        composer.render(dt);
 
         requestAnimationFrame(animate);
     }
