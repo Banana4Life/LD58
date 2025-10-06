@@ -38,10 +38,10 @@ export class ParticleSpawner {
         const idx = this.alpha.findIndex(alpha => alpha <= 0);
         if (idx !== -1) {
             // console.log("spawn", this.icon, idx)
-            this.lifetimes[idx] = 2;
+            this.lifetimes[idx] = 3;
             this.alpha[idx] = 1;
             this.velocity[idx].x = (Math.random() - 0.5) * 2;
-            this.velocity[idx].y = 0.05;
+            this.velocity[idx].y = 0.2;
             this.velocity[idx].z = (Math.random() - 0.5) * 2;
 
             this.positions[idx * 3] = position.x;
@@ -101,7 +101,7 @@ export class ParticleSpawner {
         let xPos = idx * 3;
         let yPos = idx * 3 + 1;
         let zPos = idx * 3 + 2;
-        this.positions[yPos] += this.velocity[idx].y;
+        this.positions[yPos] += this.velocity[idx].y * dt;
 
         let velocityX = this.velocity[idx].x;
         let velocityZ = this.velocity[idx].z;
@@ -110,8 +110,8 @@ export class ParticleSpawner {
         this.velocity[idx].x = velocityX;
         this.velocity[idx].z = velocityZ;
 
-        this.positions[xPos] += velocityX * dt;
-        this.positions[zPos] += velocityZ * dt;
+        this.positions[xPos] += velocityX * dt / 5;
+        this.positions[zPos] += velocityZ * dt / 5;
     }
 
     /**
