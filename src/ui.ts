@@ -239,7 +239,7 @@ function openOkDialog(textContent: string, cb: (() => void) | null = null) {
     dlgOk.querySelector(".content")!.textContent = textContent;
     dlgOkCb = cb;
     dlgOk.showModal()
-    console.log("open ok", textContent)
+    // console.log("open ok", textContent)
 }
 
 function currentUser() {
@@ -298,7 +298,6 @@ async function openGameInfo(gameId: number) {
 
     console.log("Open Game", gameId)
 
-    console.log(headerGame.dataset)
     if (headerGame.dataset.owngame === gameId.toString()) {
         gameStarsContainer.classList.add("own-game")
     } else {

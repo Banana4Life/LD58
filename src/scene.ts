@@ -12,7 +12,7 @@ import {
     MeshLambertMaterial,
     MeshPhongMaterial,
     Object3D,
-    PerspectiveCamera,
+    PerspectiveCamera, Plane,
     PlaneGeometry,
     Raycaster,
     RepeatWrapping,
@@ -39,6 +39,9 @@ function getSize(obj: Object3D): Vector3 {
     const bounds = new Box3().setFromObject(obj)
     const size = new Vector3()
     bounds.getSize(size)
+    // Turn it
+    size.z = size.y;
+    size.y = 0;
     return size
 }
 
@@ -138,7 +141,7 @@ function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: str
     hex.userData = data
 
     hex.setRotationFromQuaternion(Models.Hexagon.rotationToFlatten)
-    const {x, y, z} = coord.toWorld(fallFrom, {x: gridSize.x, y: 0, z: gridSize.y})
+    const {x, y, z} = coord.toWorld(fallFrom, {x: gridSize.x, y: 0, z: gridSize.z})
     hex.position.set(x, y, z)
     return hex
 }
@@ -500,6 +503,10 @@ function loadTilesAround(origin: CubeCoord, maxRings: number = 6) {
 export function setupScene()
 {
     const raycaster = new Raycaster()
+    const camCenterRaycaster = new Raycaster()
+    let floorPlane = new Plane(new Vector3(0, 1, 0))
+    let lastCenterCoord = CubeCoord.ORIGIN
+
 
     // Scene setup
     const scene = new Scene();
@@ -587,6 +594,20 @@ export function setupScene()
         updateGameSurface(dt)
 
         raycaster.setFromCamera( pointer, camera );
+        camCenterRaycaster.setFromCamera(new Vector2(0,0), camera)
+        let intersection = new Vector3()
+        camCenterRaycaster.ray.intersectPlane(floorPlane, intersection)
+        let centerCoord = CubeCoord.fromWorld(intersection.divide(gridSize))
+        if (lastCenterCoord.q !== centerCoord.q || lastCenterCoord.r !== centerCoord.r) {
+            lastCenterCoord = centerCoord;
+            let wantSpiral = [...centerCoord.shuffledRingsAround(0, 6)]
+            let containsKnown = wantSpiral.find(cc => storage.knownHexGrid().has(coordToKey(cc)))
+            // console.log(coordToKey(centerCoord), containsKnown)
+            if (containsKnown && wantSpiral.filter(coord => !HEX_GRID_OBJ.has(coordToKey(coord))).length > 0) {
+                loadTilesAround(centerCoord, 6)
+            }
+        }
+
 
         renderer.render(scene, camera);
 

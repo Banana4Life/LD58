@@ -63,7 +63,7 @@ export class CubeCoord {
         }
     }
 
-    fromWorld(p: Vec3): CubeCoord {
+    static fromWorld(p: Vec3): CubeCoord {
         const {x, z} = p
         return new CubeCoord(
             Math.round(CubeCoord.WORLD_TO_CUBE[0] * x + CubeCoord.WORLD_TO_CUBE[1] * z),

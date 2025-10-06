@@ -199,6 +199,7 @@ export let storage = {
     gameCoordById,
     attemptPlacingGame,
     hexGrid,
+    knownHexGrid: () => HEX_GRID,
     gameAt,
     gameById,
     givenAwards,
