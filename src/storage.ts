@@ -24,7 +24,7 @@ export function keyToCoord(key: string): CubeCoord {
     return new CubeCoord(Number(q), Number(r))
 }
 
-async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> {
+async function placeNextGameAt(coord: CubeCoord, tries: number = 0): Promise<GameInfo | undefined> {
     let coolGames = Array.from(GAMES_BY_ID.values())
         .sort((a, b) => b.cool - a.cool)
 
@@ -36,7 +36,11 @@ async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> 
             return next
         }
         if (result == 0) {
-            await fetchPlacedGames()
+            if (tries > 5) {
+                console.error("Could not place a new Game after 5 tries")
+            } else {
+                return placeNextGameAt(coord, tries + 1)
+            }
         }
     } else {
         console.log("No next game available. Try Fetching more...")
@@ -121,7 +125,7 @@ async function fetchGameAwards(): Promise<Map<number, GivenAward[]>> {
 }
 
 async function setGame(coord: CubeCoord, gameId: number) {
-    let resultGameId = await server.postHexGridGame(coord, gameId)
+    let [status, resultGameId] = await server.postHexGridGame(coord, gameId)
     let coordKey = coordToKey(coord);
     if (resultGameId === gameId) {
         GAMEID_BY_COORD.set(coordKey, gameId)
@@ -136,7 +140,12 @@ async function setGame(coord: CubeCoord, gameId: number) {
             GAMEID_BY_COORD.delete(coordKey)
             COORD_BY_GAMEID.delete(resultGameId)
         }
-        console.log("Post Hex Grid Failed!", coord, "expected", gameId, "found", resultGameId == 0 ? "already placed" : resultGameId)
+        if (status == 409) {
+            await fetchPlacedGames();
+            console.log(status, "Post Hex Grid Failed!", coord, "expected", gameId, "found", "already placed", resultGameId)
+        } else {
+            console.log(status, "Post Hex Grid Failed!", coord, "expected", gameId, "found", resultGameId)
+        }
     }
     return resultGameId
 }
