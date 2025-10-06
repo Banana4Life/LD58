@@ -24,3 +24,9 @@ export function getJam() {
     }
     return defaultJam
 }
+
+export function eggs() {
+    if (currentUrl.searchParams.get("utm_source") === "MetaJammer") {
+        alert("🥚🥚🥚")
+    }
+}

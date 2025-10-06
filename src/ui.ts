@@ -60,7 +60,9 @@ btbWebGameOpener.addEventListener("click", (e) => {
     console.log("open...", btbWebGameOpener.dataset.url)
     e.preventDefault()
     e.stopPropagation()
-    openWebGame(btbWebGameOpener.dataset.url)
+    let url = new URL(btbWebGameOpener.dataset.url!)
+    url.searchParams.set("utm_source", "MetaJammer")
+    openWebGame(url.toString())
 })
 
 btnJamPageOpener.addEventListener("click", (e) => {
