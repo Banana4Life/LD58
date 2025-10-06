@@ -417,13 +417,15 @@ function moveOvertime(): SmoothMover {
 
 let currentTile: Object3D | undefined = undefined
 
-function setupSelectedTileHighlight(mover: SmoothMover, intensity: number = 1): [Object3D, Updater] {
+function setupSelectedTileHighlight(mover: SmoothMover): [Object3D, Updater] {
+    const intensity = 1000
     const target = new Object3D()
     const light = new SpotLight(Color.NAMES.white, 0)
     light.translateY(45)
     light.angle = Math.PI / 4
     light.target = target
-    light.distance = 0
+    light.distance = 60
+    light.castShadow = true
 
     const group = new Group()
     group.add(light, target)
@@ -634,7 +636,7 @@ export function setupScene()
 
 
     const updateLight = setupGlobalLight(scene, camera)
-    const [selectedTileHighlight, updateSelectedTileHighlight] = setupSelectedTileHighlight(smoothMover,  1000)
+    const [selectedTileHighlight, updateSelectedTileHighlight] = setupSelectedTileHighlight(smoothMover)
     scene.add(selectedTileHighlight)
 
     const [spawnTiles, enqueueTile, removeQueuedTile, spawnBatch] = tileSpawner(scene, 10)
