@@ -7,6 +7,7 @@ import emptyStar from './assets/empty-star.svg';
 import award2 from './assets/award-2.svg';
 // import award3 from './assets/award-3.svg';
 import certificate from './assets/certificate.svg';
+import {scene} from "./scene.ts";
 
 
 const LOCALSTORAGE_USER = "user";
@@ -397,7 +398,7 @@ function appendGame(index: number, half: boolean, name: string, gameId: number) 
     gameIdDiv.dataset.gameId = gameId.toString()
     gameIdDiv.appendChild(clone)
     dlgGames.prepend(gameIdDiv)
-    gameIdDiv.addEventListener("click",  () => openGameInfo(gameId).then(() => openSpecificRating(gameId)))
+    gameIdDiv.addEventListener("click",  () => scene.selectTileByGameId(gameId))
 }
 
 async function submitRating() {

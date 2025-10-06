@@ -261,8 +261,9 @@ function gameSurface(scene: Scene, camera: Camera): Updater {
     }
 }
 
+let orbitControls: OrbitControls
 function setupControls(camera: Camera, renderer: WebGLRenderer) {
-    const orbitControls = new OrbitControls(camera, renderer.domElement);
+    orbitControls = new OrbitControls(camera, renderer.domElement);
     orbitControls.enableRotate = false
     orbitControls.enableZoom = true
     orbitControls.screenSpacePanning = false
@@ -338,17 +339,30 @@ function setupLight(scene: Scene, camera: Camera): Updater {
 
 let currentTile: Object3D | undefined = undefined
 async function trySelectTile(coord: CubeCoord, tile: Object3D, isNewTile: boolean = false) {
-    let gameAt = storage.gameAt(coord)
-    if (gameAt) {
-        selectTile(tile, gameAt, isNewTile)
+    let gameId = storage.gameAt(coord)
+    if (gameId) {
+        selectTile(tile, gameId, isNewTile)
         return true
     }
 
     return false
 }
 
-async function selectTile(tile: Object3D, gameAt: number, isNewTile: boolean = false) {
-    if (currentTile === tile) {
+async function selectTileByGameId(gameId: number) {
+    const coord = storage.gameCoordById(gameId)
+    if (!coord) {
+        return
+    }
+    const tile = hexObj(coord);
+    if (!tile) {
+        return
+    }
+
+    await selectTile(tile, gameId, false, false)
+}
+
+async function selectTile(tile: Object3D, gameId: number, isNewTile: boolean = false, toggle: boolean = true) {
+    if (toggle && currentTile === tile) {
         unselectCurrentTile()
         return
     }
@@ -359,7 +373,13 @@ async function selectTile(tile: Object3D, gameAt: number, isNewTile: boolean = f
     if (!isNewTile) {
         tile.position.y += selectedHeight
     }
-    ui.openGameInfo(gameAt)
+
+    if (!toggle) {
+        orbitControls.target.set(tile.position.x, orbitControls.target.y, tile.position.z)
+        orbitControls.update()
+    }
+
+    await ui.openGameInfo(gameId)
 }
 
 function unselectCurrentTile() {
@@ -374,8 +394,6 @@ const canvasContainer = document.querySelector<HTMLElement>('.canvas-container')
 
 export async function setupScene()
 {
-
-
     const raycaster = new Raycaster()
 
     const textureLoader = new TextureLoader()
@@ -499,5 +517,6 @@ export async function setupScene()
 
 export let scene = {
     hexObj,
-    setCoverImage
+    setCoverImage,
+    selectTileByGameId,
 }  as const
