@@ -1,5 +1,4 @@
-LD58
-====
+MetaJammer
+==========
 
-Hello World!
-
+Play at: https://banana4life.github.io/MetaJammer/

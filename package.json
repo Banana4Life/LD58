@@ -12,6 +12,8 @@
     "publish": "tsc && vite build --base /MetaJammer/"
   },
   "dependencies": {
+    "postcss-import-url": "^7.2.0",
+    "postcss-inline-base64": "^7.3.1",
     "three": "^0.180.0"
   },
   "devDependencies": {
@@ -21,5 +23,14 @@
     "vite": "^5.0.0",
     "vite-plugin-arraybuffer": "^0.1.0",
     "vite-svg-loader": "^5.1.0"
+  },
+  "postcss": {
+    "map": true,
+    "plugins": {
+      "postcss-import-url": {
+        "recursive": true,
+        "modernBrowser": true
+      }
+    }
   }
 }
