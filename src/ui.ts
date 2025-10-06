@@ -30,6 +30,7 @@ dlgBtnOk.addEventListener("click", () => {
 })
 
 
+let headerElement = document.querySelector("header")!;
 let playerNamePlate = document.querySelector("#player")!;
 let btnChangeUser = document.querySelector("#btn-change-user")!;
 
@@ -176,7 +177,7 @@ async function updateNamePlate(user: string) {
     playerNamePlate.querySelector(".player-name")!.textContent = user;
 
     let game = await server.findUserGames(JAM_NAME, user)
-    playerNamePlate.querySelector(".game")!.classList.remove("has-game");
+    headerElement.querySelector(".game")!.classList.remove("has-game");
 
     if (game.games.length === 0) {
         const dialogs = [
@@ -199,10 +200,9 @@ async function updateNamePlate(user: string) {
         }
 
         let currentGameName = game.current?.name;
-        playerNamePlate.querySelector(".game-name")!.textContent = currentGameName || ""
-        playerNamePlate.querySelector(".game")
+        headerElement.querySelector(".game-name")!.textContent = currentGameName || ""
         if (game.current != null) {
-            playerNamePlate.querySelector(".game")!.classList.add("has-game");
+            headerElement.querySelector(".game")!.classList.add("has-game");
         }
 
         if (game.current) {

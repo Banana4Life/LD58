@@ -41,28 +41,13 @@ header {
         user-select: all;
     }
     #player {
-        border-left: 2px solid black;
         display: flex;
         gap: 5px;
-        .game {
-            display: none;
-            &.has-game {
-                display: block;
-            }
-        }
-        .player-name {
-            user-select: all;
-        }
-
-        padding-left: 5px;
-        background: #f79122;
-        span {
-            padding: 2px;
-        }
         button {
             padding: 0 8px;
             border: 0;
-            border-left: 1px solid black;
+            border-left: 2px solid black;
+            border-right: 2px solid black;
 
             font-size: 16px;
             background: #2288F7;
@@ -70,6 +55,39 @@ header {
             font-weight: bold;
             cursor: pointer;
         }
+
+        .player-name {
+            user-select: all;
+            white-space: nowrap;
+            padding-right: 8px;
+        }
+
+        background: #f79122;
+        span {
+            padding: 2px;
+        }
+
+    }
+
+    .game {
+        padding-left: 5px;
+        padding-right: 5px;
+        gap: 5px;
+        border-left: 2px solid black;
+        display: none;
+        &.has-game {
+            display: flex;
+            white-space: nowrap;
+        }
+        .game-name {
+            max-width: 200px;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+        span {
+            padding: 2px;
+        }
+
     }
 
 }
@@ -390,4 +408,8 @@ header {
             }
         }
     }
+}
+
+*:focus {
+    outline: none;
 }
