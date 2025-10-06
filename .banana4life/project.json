@@ -1,0 +1,14 @@
+{
+  "name": "MetaJammer",
+  "description": "Play our game playing your games",
+  "jam": {
+    "name": "Ludum Dare",
+    "number": 58,
+    "theme": "Collector",
+    "site": "https://ldjam.com/events/ludum-dare/58/meta-jammer",
+    "comments": []
+  },
+  "web": "https://banana4life.github.io/MetaJammer/",
+  "authors": []
+}
+
