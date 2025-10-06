@@ -21,6 +21,7 @@ import {
     TextureLoader,
     Vector2,
     Vector3,
+    Vector3Like,
     WebGLRenderer
 } from "three";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
@@ -30,6 +31,7 @@ import {ui} from "./ui.ts";
 import {Textures} from "./textures.ts";
 import {Sounds} from "./sounds.ts";
 import {PCFSoftShadowMap} from "three/src/constants";
+import {lerp} from "three/src/math/MathUtils";
 
 const TEXTURE_LOADER = new TextureLoader()
 const FALL_START_HEIGHT = 100
@@ -92,7 +94,10 @@ function isTileObjectData(data: any): data is TileObjectData {
     return 'coord' in data
 }
 
-function asTileObjectData(data: any): TileObjectData | undefined {
+function asTileObjectData(data: Object3D | any): TileObjectData | undefined {
+    if (data instanceof Object3D) {
+        data = data.userData
+    }
     if (isTileObjectData(data)) {
         return data
     }
@@ -142,7 +147,7 @@ function createHex(coord: CubeCoord, coverUrl: string | null, fallFrom: number, 
     hex.userData = data
 
     hex.setRotationFromQuaternion(Models.Hexagon.rotationToFlatten)
-    const {x, y, z} = coord.toWorld(fallFrom, {x: gridSize.x, y: 0, z: gridSize.z})
+    const {x, y, z} = coord.toWorld(fallFrom, gridSize)
     hex.position.set(x, y, z)
     return hex
 }
@@ -204,11 +209,11 @@ function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number 
             const item = tileQueue.shift()
             if (item) {
                 const [queuedTile, resolve] = item
-                const t = asTileObjectData(queuedTile.userData)?.fallDuration ?? fallDuration
+                const t = asTileObjectData(queuedTile)?.fallDuration ?? fallDuration
                 falling.set(queuedTile.id, {
                     resolve,
                     fallingTime: 0,
-                    fallDuration: asTileObjectData(queuedTile.userData)?.fallDuration ?? fallDuration,
+                    fallDuration: asTileObjectData(queuedTile)?.fallDuration ?? fallDuration,
                     speed: initialSpeed(g, queuedTile.position.y, t),
                 })
                 scene.add(queuedTile)
@@ -293,9 +298,13 @@ function gameSurface(scene: Scene, camera: Camera): Updater {
     }
 }
 
-let orbitControls: OrbitControls
-function setupControls(camera: Camera, renderer: WebGLRenderer) {
-    orbitControls = new OrbitControls(camera, renderer.domElement);
+let orbitControls: (target: Vector3Like) => void
+
+function setupCamera(aspect: number, renderer: WebGLRenderer, smoothMover: SmoothMover): [PerspectiveCamera, (target: Vector3Like, duration: number) => Promise<void>] {
+    const camera = new PerspectiveCamera(80, aspect, 0.1, 1000);
+    camera.translateY(100)
+
+    const orbitControls = new OrbitControls(camera, renderer.domElement);
     orbitControls.enableRotate = false
     orbitControls.enableZoom = true
     orbitControls.screenSpacePanning = false
@@ -307,6 +316,94 @@ function setupControls(camera: Camera, renderer: WebGLRenderer) {
     orbitControls.maxDistance = 200
     orbitControls.listenToKeyEvents(window)
     orbitControls.update()
+
+    const setCameraTarget = async (target: Vector3Like, duration: number): Promise<void> => {
+        orbitControls.enabled = false
+        await smoothMover.move(orbitControls.target, target, duration, {
+            update(dt) {
+                orbitControls.update(dt)
+            },
+            interpolator: ease,
+        });
+        orbitControls.enabled = true
+    }
+
+    return [camera, setCameraTarget]
+}
+
+interface SmoothMoverOptions {
+    update?(dt: number): void
+    interpolator?(from: number, to: number, t: number): number
+}
+interface SmoothMover {
+    update(dt: number): void
+    move(from: Vector3, to: Vector3Like, duration: number, options?: SmoothMoverOptions): Promise<void>
+}
+
+function ease(from: number, to: number, t: number): number {
+    const easedTime = t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2
+    return lerp(from, to, easedTime)
+}
+
+function moveOvertime(): SmoothMover {
+
+    let i = 0
+
+    interface State {
+        subject: Vector3
+        from: Vector3
+        to: Vector3
+        duration: number
+        time: number
+        options?: SmoothMoverOptions,
+        resolve(): void
+    }
+
+    const movements = new Map<number, State>()
+
+    return {
+        move(from: Vector3, to: Vector3Like, duration: number, options?: SmoothMoverOptions): Promise<void> {
+            const fromCopy = new Vector3(from.x, from.y, from.z)
+            const toCopy = new Vector3(to.x, to.y, to.z)
+
+            return new Promise(resolve => {
+                const state: State = {
+                    subject: from,
+                    from: fromCopy,
+                    to: toCopy,
+                    duration,
+                    time: 0,
+                    resolve,
+                    options,
+                }
+                movements.set(i++, state)
+            })
+        },
+        update(dt: number): void {
+            for (let [id, state] of movements) {
+                state.time = Math.min(state.duration, state.time + dt)
+                const t = state.time / state.duration
+                const interpolator = state?.options?.interpolator ?? lerp
+                // noinspection JSSuspiciousNameCombination
+                state.subject.set(
+                    interpolator(state.from.x, state.to.x, t),
+                    interpolator(state.from.y, state.to.y, t),
+                    interpolator(state.from.z, state.to.z, t),
+                )
+                const update = state.options?.update
+                if (update) {
+                    update(dt)
+                }
+
+                if (state.time >= state.duration) {
+                    movements.delete(id)
+                    state.resolve()
+                }
+            }
+        }
+    }
 }
 
 function setupLight(scene: Scene, camera: Camera): Updater {
@@ -393,38 +490,11 @@ async function selectTileByGameId(gameId: number) {
     await selectTile(tile, gameId, false)
 }
 
-function moveCameraToTile(tile: Object3D) {
-    const startX = orbitControls.target.x
-    const startZ = orbitControls.target.z
-    const targetX = tile.position.x
-    const targetZ = tile.position.z
-    const duration = 0.5 // duration in seconds
-    const startTime = performance.now()
-
-    const animateCamera = () => {
-        const elapsed = (performance.now() - startTime) / 1000
-        const progress = Math.min(elapsed / duration, 1)
-
-        const eased = progress < 0.5
-            ? 4 * progress * progress * progress
-            : 1 - Math.pow(-2 * progress + 2, 3) / 2
-
-        orbitControls.target.set(
-            startX + (targetX - startX) * eased,
-            orbitControls.target.y,
-            startZ + (targetZ - startZ) * eased
-        )
-        orbitControls.update()
-
-        if (progress < 1) {
-            requestAnimationFrame(animateCamera)
-        }
-    }
-
-    animateCamera()
-}
-
 async function selectTile(tile: Object3D, gameId: number, toggle: boolean = true) {
+    const data = asTileObjectData(tile)
+    if (!data) {
+        return Promise.reject("invalid object!")
+    }
     if (toggle && currentTile === tile) {
         unselectCurrentTile()
         return
@@ -432,15 +502,12 @@ async function selectTile(tile: Object3D, gameId: number, toggle: boolean = true
 
     unselectCurrentTile()
 
-    const data = asTileObjectData(tile)
-    if (data) {
-        data.selected = true
-    }
+    data.selected = true
 
     currentTile = tile
 
     if (!toggle) {
-        moveCameraToTile(tile);
+        orbitControls(data.coord.toWorld(0, gridSize));
     }
 
     await ui.openGameInfo(gameId)
@@ -490,9 +557,7 @@ export function setupScene()
     // Scene setup
     const scene = new Scene();
     scene.background = new Color(Color.NAMES.hotpink)
-    const camera = new PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1000);
-    scene.add(camera)
-    camera.translateY(100)
+
     const canvas = document.querySelector<HTMLCanvasElement>('#main-canvas')!
     const pointer = new Vector2()
     document.addEventListener('mousemove', e => {
@@ -500,13 +565,18 @@ export function setupScene()
         pointer.y = - ( e.clientY /  canvas.height ) * 2 + 1;
     })
 
-
     const renderer = new WebGLRenderer({
         antialias: true,
-        canvas: canvas
+        canvas: canvas,
     });
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = PCFSoftShadowMap
+
+    const smoothMover = moveOvertime()
+    const [camera, setCameraTarget] = setupCamera(canvasContainer.clientWidth / canvasContainer.clientHeight, renderer, smoothMover)
+    orbitControls = (target: Vector3Like) => setCameraTarget(target, 0.5)
+    scene.add(camera)
+
 
     const audioListener = new AudioListener()
     scene.add(audioListener)
@@ -515,7 +585,6 @@ export function setupScene()
 
 
     const updateLight = setupLight(scene, camera)
-    setupControls(camera, renderer)
 
     const [spawnTiles, enqueueTile, removeQueuedTile, spawnBatch] = tileSpawner(scene, 10)
     TILE_SPAWNER = {enqueueTile, removeQueuedTile, spawnBatch}
@@ -543,7 +612,7 @@ export function setupScene()
                             if (info && info.cover) {
                                 unselectCurrentTile()
                                 const newObj = createHex(data.coord, info?.cover, camWorldPos.y, 1)
-                                asTileObjectData(newObj.userData)
+                                asTileObjectData(newObj)
                                     ?.textureLoaded
                                     ?.then(() => {
                                         return Sounds.DropSlap.prepare(audioListener)
@@ -567,6 +636,7 @@ export function setupScene()
     function animate(): void {
         const dt = clock.getDelta()
 
+        smoothMover.update(dt)
         updateLight(dt)
         spawnTiles(dt)
         updateGameSurface(dt)
