@@ -31,7 +31,9 @@ import {Textures} from "./textures.ts";
 import {Sounds} from "./sounds.ts";
 import {PCFSoftShadowMap} from "three/src/constants";
 
-const selectedHeight = 10
+const TEXTURE_LOADER = new TextureLoader()
+const FALL_START_HEIGHT = 100
+const SELECTED_HEIGHT = 10
 
 function getSize(obj: Object3D): Vector3 {
     const bounds = new Box3().setFromObject(obj)
@@ -168,7 +170,7 @@ function updateGameIdUserDataTargetLevel(gameId: number, targetLevel: number) {
     }
 }
 
-function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number = 2): [Updater, (obj: Object3D, next?: boolean) => Promise<void>, (obj: Object3D) => boolean, (id: number) => boolean] {
+function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number = 2): [Updater, (obj: Object3D, next?: boolean) => Promise<void>, (obj: Object3D) => boolean, (tiles: Object3D[]) => void] {
 
     function initialSpeed(acceleration: number, height: number, durationSeconds: number): number {
         return -((acceleration * durationSeconds / 2) - ((height / durationSeconds)))
@@ -260,26 +262,22 @@ function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number 
         return false
     }
 
-    const prioritize = (id: number) => {
-        const coord = storage.gameCoordById(id);
-        if (!coord) {
-            return false
-        }
+    function spawnBatch(tiles: Object3D[], next: boolean = true) {
+        tiles.forEach(t => {
+            remove(t)
+        })
 
-        const tile = hexObj(coord);
-        if (!tile) {
-            return false
-        }
+        const reverseFilteredTiles =  tiles.filter(t => {
+            return !falling.has(t.id)
+        })
+        reverseFilteredTiles.reverse()
 
-        if (remove(tile)) {
-            spawn(tile, true)
-            return true
-        }
-
-        return false
+        reverseFilteredTiles.forEach(t => {
+            spawn(t, next)
+        })
     }
 
-    return [update, spawn, remove, prioritize]
+    return [update, spawn, remove, spawnBatch]
 }
 
 function gameSurface(scene: Scene, camera: Camera): Updater {
@@ -457,7 +455,7 @@ async function selectTile(tile: Object3D, gameId: number, isNewTile: boolean = f
 
     currentTile = tile
     if (!isNewTile) {
-        tile.position.y += selectedHeight
+        tile.position.y += SELECTED_HEIGHT
     }
 
     if (!toggle) {
@@ -469,7 +467,7 @@ async function selectTile(tile: Object3D, gameId: number, isNewTile: boolean = f
 
 function unselectCurrentTile() {
     if (currentTile){
-        currentTile.position.y -= selectedHeight
+        currentTile.position.y -= SELECTED_HEIGHT
         ui.closeGameInfo()
         currentTile = undefined
     }
@@ -478,11 +476,31 @@ function unselectCurrentTile() {
 const canvasContainer = document.querySelector<HTMLElement>('.canvas-container')!
 
 let TILE_SPAWNER: TileSpawner
+
+function loadTilesAround(origin: CubeCoord, maxRings: number = 6) {
+    storage.hexGrid().then(serverGrid => {
+        let tiles: Object3D[] = []
+        for (let cubeCoord of origin.shuffledRingsAround(0, maxRings)) {
+            const coord = coordToKey(cubeCoord);
+            const gameId = serverGrid.get(coord)
+            const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
+            let hexObj = HEX_GRID_OBJ.get(coord)
+            if (!hexObj) {
+                hexObj = createHex(cubeCoord, TEXTURE_LOADER, coverUrl, FALL_START_HEIGHT, 0.6);
+                HEX_GRID_OBJ.set(coord, hexObj)
+            }
+
+            tiles.push(hexObj)
+        }
+
+        TILE_SPAWNER.spawnBatch(tiles);
+    })
+}
+
 export function setupScene()
 {
     const raycaster = new Raycaster()
 
-    const textureLoader = new TextureLoader()
     // Scene setup
     const scene = new Scene();
     scene.background = new Color(Color.NAMES.hotpink)
@@ -513,7 +531,8 @@ export function setupScene()
     const updateLight = setupLight(scene, camera)
     setupControls(camera, renderer)
 
-    const [spawnTiles, enqueueTile, removeQueuedTile, prioritize] = tileSpawner(scene, 10)
+    const [spawnTiles, enqueueTile, removeQueuedTile, spawnBatch] = tileSpawner(scene, 10)
+    TILE_SPAWNER = {enqueueTile, removeQueuedTile, spawnBatch}
     const updateGameSurface = gameSurface(scene, camera)
 
     // const material = new MeshBasicMaterial({
@@ -523,15 +542,7 @@ export function setupScene()
     // plane.rotation.setFromRotationMatrix()
     const camWorldPos = new Vector3()
     camera.getWorldPosition(camWorldPos)
-    storage.hexGrid().then(serverGrid => {
-        for (let cubeCoord of CubeCoord.ORIGIN.shuffledRingsAround(0, 6)) {
-            const gameId = serverGrid.get(coordToKey(cubeCoord))
-            const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
-            let hexObj = createHex(cubeCoord, textureLoader, coverUrl, camWorldPos.y, 0.6);
-            HEX_GRID_OBJ.set(coordToKey(cubeCoord), hexObj)
-            enqueueTile(hexObj);
-        }
-    })
+    loadTilesAround(CubeCoord.ORIGIN)
 
     renderer.domElement.addEventListener('click', async () => {
         const intersects = raycaster.intersectObjects( scene.children, true );
@@ -544,9 +555,9 @@ export function setupScene()
                         if (!await trySelectTile(data.coord, parent)) {
                             const info = await storage.placeNextGameAt(data.coord)
                             if (info && info.cover) {
-                                parent.position.y += selectedHeight
+                                parent.position.y += SELECTED_HEIGHT
                                 unselectCurrentTile()
-                                const newObj = createHex(data.coord, textureLoader, info?.cover, camWorldPos.y, 1, parent.position.y)
+                                const newObj = createHex(data.coord, TEXTURE_LOADER, info?.cover, camWorldPos.y, 1, parent.position.y)
                                 asTileObjectData(newObj.userData)
                                     ?.textureLoaded
                                     ?.then(() => {
@@ -597,14 +608,12 @@ export function setupScene()
 
     // Start animation loop
     requestAnimationFrame(animate)
-
-    TILE_SPAWNER = {enqueueTile, removeQueuedTile, prioritize}
 }
 
 export interface TileSpawner {
     enqueueTile(obj: Object3D, next?: boolean): Promise<void>
     removeQueuedTile(obj: Object3D): boolean
-    prioritize(id: number): boolean
+    spawnBatch(tiles: Object3D[]): void
 }
 
  function hexObj(coord: CubeCoord) {
@@ -616,6 +625,6 @@ export let scene = {
     setCoverImage,
     selectTileByGameId,
     updateGameIdUserDataTargetLevel,
-    selectedHeight,
-    spawner: () => TILE_SPAWNER,
+    selectedHeight: SELECTED_HEIGHT,
+    loadTilesAround,
 }  as const
