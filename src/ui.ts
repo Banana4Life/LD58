@@ -36,6 +36,8 @@ let btnChangeUser = document.querySelector("#btn-change-user")!;
 btnChangeUser.addEventListener("click", openUsernameDialog)
 
 
+let dlgLogo = document.querySelector<HTMLDialogElement>("#dlg-logo")!;
+
 let dlgGame = document.querySelector<HTMLDialogElement>("#dlg-game")!;
 let btbWebGameOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-webgame")!;
 let btnJamPageOpener = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-jamgamepage")!;
@@ -303,10 +305,12 @@ async function openGameInfo(gameId: number) {
     resetStarsToDataSet(dlgGame.dataset, gameStars)
 
     dlgGame.style.display = "block"
+    dlgLogo.style.display = "none"
 }
 
 function closeGameInfo() {
     dlgGame.style.display = "none"
+    dlgLogo.style.display = "flex"
 }
 
 function openWebGame(url: string | undefined) {

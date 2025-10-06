@@ -212,8 +212,20 @@ header {
     }
 }
 
+#dlg-logo {
+    display: flex;
+    img {
+        width: 100%;
+    }
+    border-bottom: 2px solid black;
+}
+
 .dialog {
 
+    .content {
+        font-size: 25px;
+        text-align: center;
+    }
     user-select: none;
 
     min-width: 20%;
@@ -235,6 +247,8 @@ header {
 #dlg-username {
     input {
         width: calc(100% - 10px);
+        text-align: center;
+        font-size: 35px;
     }
 }
 
