@@ -19,6 +19,8 @@ body {
     grid-template-rows: 30px 1fr;
 
     height: 100vh;
+
+    background: black;
 }
 
 header {
