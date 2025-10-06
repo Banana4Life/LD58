@@ -32,6 +32,7 @@ import {Textures} from "./textures.ts";
 import {Sounds} from "./sounds.ts";
 import {PCFSoftShadowMap} from "three/src/constants";
 import {lerp} from "three/src/math/MathUtils";
+import {ParticleSpawner} from "./particleSpawner.ts";
 
 const TEXTURE_LOADER = new TextureLoader()
 const FALL_START_HEIGHT = 100
@@ -597,6 +598,8 @@ function loadTilesAround(origin: CubeCoord, maxRings: number = 6) {
     TILE_SPAWNER.spawnBatch(tiles);
 }
 
+const PARTICLE_SPAWNERS = new Map<string, ParticleSpawner>
+
 export function setupScene()
 {
     const raycaster = new Raycaster()
@@ -607,6 +610,12 @@ export function setupScene()
 
     // Scene setup
     const scene = new Scene();
+
+    let awards = storage.awards()
+    awards.forEach(award => {
+        PARTICLE_SPAWNERS.set(award.key, new ParticleSpawner(scene, award.icon,  1000))
+    })
+
     scene.background = new Color(Color.NAMES.hotpink)
 
     const canvas = document.querySelector<HTMLCanvasElement>('#main-canvas')!
@@ -718,6 +727,12 @@ export function setupScene()
             }
 
         }
+
+        for (let [awardKey, pSpawner] of PARTICLE_SPAWNERS) {
+            pSpawner.spawn(new Vector3((Math.random() - 0.5) * 40, 10, (Math.random() - 0.5) * 20));
+            pSpawner.update(dt)
+        }
+
 
 
         renderer.render(scene, camera);
