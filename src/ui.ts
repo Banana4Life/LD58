@@ -169,6 +169,12 @@ function selectRating(e: MouseEvent, index: number, action: string) {
     }
 }
 
+function setTopStars(rating: number, stars: NodeListOf<HTMLImageElement>){
+    let starIndex = Math.ceil((rating / 2) - 1);
+    let halfRating = (rating % 2 === 1)
+    setStars(starIndex, halfRating, stars)
+}
+
 function setStars(index: number, isHalf: boolean, stars: NodeListOf<HTMLImageElement>) {
     stars.forEach((s, i) => {
         if (i < index) s.src = fullStar;
@@ -345,12 +351,12 @@ function openRatingRanking() {
 function appendTopRatingGame(gameId: number, stars: number) {
     let clone = document.importNode(dlgRatingRankingTemplate.content, true)
     clone.querySelector(".name")!.textContent = storage.gameById(gameId).name
-    clone.querySelector(".count")!.textContent = stars.toString()
     const gameIdDiv = document.createElement("div")
     gameIdDiv.classList.add("rating-ranking")
     gameIdDiv.dataset.gameId = gameId.toString()
     gameIdDiv.appendChild(clone)
     dlgRatingRanking.querySelector(`.content`)!.append(gameIdDiv)
+    setTopStars(stars, gameIdDiv.querySelectorAll<HTMLImageElement>(".star"))
     gameIdDiv.addEventListener("click",  () => scene.selectTileByGameId(gameId))
 }
 

@@ -374,10 +374,14 @@ header {
                 white-space: nowrap;
             }
 
-            .rating-count {
-                min-width: 75px;
+            .stars {
                 display: flex;
-                justify-content: space-between;
+                justify-content: center;
+                img {
+                    height: 20px;
+                }
+                font-size: 40px;
+                font-family: monospace;
             }
         }
     }
