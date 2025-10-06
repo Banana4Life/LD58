@@ -71,7 +71,7 @@ header {
 
     }
 
-    #awards {
+    #awards, #rating {
         display: flex;
         gap: 5px;
 
@@ -350,6 +350,31 @@ header {
             }
 
             .award-count {
+                min-width: 75px;
+                display: flex;
+                justify-content: space-between;
+            }
+        }
+    }
+}
+
+#dlg-rating-ranking {
+    max-width: 50%;
+    .rating-ranking {
+        .content {
+            padding-left:10px;
+            padding-right:10px;
+            gap: 15px;
+            display: flex;
+            justify-content: space-between;
+
+            .name {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .rating-count {
                 min-width: 75px;
                 display: flex;
                 justify-content: space-between;

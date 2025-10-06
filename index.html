@@ -11,6 +11,9 @@
     <div id="awards">
         <button id="btn-award-ranking">🏆</button>
     </div>
+    <div id="rating">
+        <button id="btn-rating-ranking">⭐</button>
+    </div>
     <div class="game-title">
         MetaJammer
     </div>
@@ -92,6 +95,16 @@
     </div>
 </template>
 
+<template id="rating-ranking-template">
+    <div class="content">
+        <div class="name"></div>
+        <div class="rating-count">
+            <div></div>
+            <div class="count"></div>
+        </div>
+    </div>
+</template>
+
 <div class="dialogs">
     <dialog id="dlg-username" class="dialog">
         <form class="dialog-wrapper">
@@ -168,6 +181,16 @@
             </div>
             <div class="buttons">
                 <button class="dlg-btn-close-award-ranking">Ok</button>
+            </div>
+        </div>
+    </dialog>
+    <dialog id="dlg-rating-ranking" class="dialog">
+        <div class="dialog-wrapper">
+            <div class="content">
+                Top 10 Rated Games
+            </div>
+            <div class="buttons">
+                <button class="dlg-btn-close-rating-ranking">Ok</button>
             </div>
         </div>
     </dialog>

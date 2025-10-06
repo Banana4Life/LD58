@@ -197,6 +197,16 @@ function topAwards(): {gameId: number, awardCount: number}[] {
         .slice(0, 10);
 }
 
+function topRatings(): {gameId: number, stars: number}[] {
+    return Array.from(RATINGS_MAP.entries())
+        .map(([gameId, stars]) => ({
+            gameId,
+            stars
+        }))
+        .sort((a, b) => b.stars - a.stars)
+        .slice(0, 10);
+}
+
 function givenAwards(gameId: number) {
     let awards = AWARDS_MAP.get(gameId) || []
     return awards;
@@ -268,6 +278,7 @@ export let storage = {
     givenAwards,
     giveAward,
     topAwards,
+    topRatings,
     clearUserRatingsCache,
     getUserRating,
     getUserRatings,

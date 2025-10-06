@@ -16,6 +16,7 @@ let dlgUserName = document.querySelector<HTMLDialogElement>("#dlg-username")!;
 dlgUserName.querySelector("form")?.addEventListener("submit", saveUserName)
 
 let dlgAwardRanking = document.querySelector<HTMLDialogElement>("#dlg-award-ranking")!;
+let dlgRatingRanking = document.querySelector<HTMLDialogElement>("#dlg-rating-ranking")!;
 
 let dlgOk = document.querySelector<HTMLDialogElement>("#dlg-ok")!;
 let dlgOkCb: (() => void) | null = null;
@@ -40,6 +41,8 @@ let btnChangeUser = document.querySelector("#btn-change-user")!;
 btnChangeUser.addEventListener("click", openUsernameDialog)
 let btnAwardRanking = document.querySelector("#btn-award-ranking")!;
 btnAwardRanking.addEventListener("click", openAwardRanking)
+let btnRatingRanking = document.querySelector("#btn-rating-ranking")!;
+btnRatingRanking.addEventListener("click", openRatingRanking)
 
 
 let dlgLogo = document.querySelector<HTMLDialogElement>("#dlg-logo")!;
@@ -54,6 +57,7 @@ let gameStarsContainer = dlgGame.querySelector<HTMLElement>(".stars")!
 let dlgGames = document.querySelector("#dlg-games")!
 let dlgGamesTemplate = document.querySelector<HTMLTemplateElement>("#prev-game-template")!
 let dlgAwardRankingTemplate = document.querySelector<HTMLTemplateElement>("#award-ranking-template")!
+let dlgRatingRankingTemplate = document.querySelector<HTMLTemplateElement>("#rating-ranking-template")!
 
 
 btbWebGameOpener.addEventListener("click", (e) => {
@@ -90,6 +94,10 @@ btnCloseAwards?.addEventListener("click", () => {
 let btnCloseAwardRanking = dlgAwardRanking.querySelector<HTMLButtonElement>(".dlg-btn-close-award-ranking")
 btnCloseAwardRanking?.addEventListener("click", () => {
     dlgAwardRanking.close()
+})
+let btnCloseRatingRanking = dlgRatingRanking.querySelector<HTMLButtonElement>(".dlg-btn-close-rating-ranking")
+btnCloseRatingRanking?.addEventListener("click", () => {
+    dlgRatingRanking.close()
 })
 
 
@@ -321,6 +329,28 @@ function appendTopAwardGame(gameId: number, awardCount: number) {
     gameIdDiv.dataset.gameId = gameId.toString()
     gameIdDiv.appendChild(clone)
     dlgAwardRanking.querySelector(`.content`)!.append(gameIdDiv)
+    gameIdDiv.addEventListener("click",  () => scene.selectTileByGameId(gameId))
+}
+
+function openRatingRanking() {
+    dlgRatingRanking.querySelectorAll<HTMLDivElement>(`.rating-ranking`).forEach(game => game.remove())
+
+    const topRatings = storage.topRatings();
+    for (let {gameId, stars} of topRatings) {
+        appendTopRatingGame(gameId, stars)
+    }
+    dlgRatingRanking.showModal()
+}
+
+function appendTopRatingGame(gameId: number, stars: number) {
+    let clone = document.importNode(dlgRatingRankingTemplate.content, true)
+    clone.querySelector(".name")!.textContent = storage.gameById(gameId).name
+    clone.querySelector(".count")!.textContent = stars.toString()
+    const gameIdDiv = document.createElement("div")
+    gameIdDiv.classList.add("rating-ranking")
+    gameIdDiv.dataset.gameId = gameId.toString()
+    gameIdDiv.appendChild(clone)
+    dlgRatingRanking.querySelector(`.content`)!.append(gameIdDiv)
     gameIdDiv.addEventListener("click",  () => scene.selectTileByGameId(gameId))
 }
 
