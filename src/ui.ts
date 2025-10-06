@@ -212,10 +212,13 @@ async function updateNamePlate(user: string) {
             let coord = storage.gameCoordById(userGamesInfo.current.id);
             if (!coord) {
                 await storage.attemptPlacingGame(userGamesInfo.current.id);
-                // TODO teleport to
             } else {
                 console.log(user, "your game", userGamesInfo.current.id, "is already placed @", coord)
             }
+
+            scene.updateGameIdUserDataTargetLevel(userGamesInfo.current.id, scene.selectedHeight)
+            scene.selectTileByGameId(userGamesInfo.current.id)
+            scene.spawner().prioritize(userGamesInfo.current.id)
         } else {
             console.log(user, "You have no game")
         }

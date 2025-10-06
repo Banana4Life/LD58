@@ -145,7 +145,32 @@ function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: str
 
 type Updater = (dt: DOMHighResTimeStamp) => void
 
-function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number = 2): [Updater, (obj: Object3D, next?: boolean) => Promise<void>] {
+function updateGameIdUserDataTargetLevel(gameId: number, targetLevel: number) {
+    const coord = storage.gameCoordById(gameId);
+    if (!coord) {
+        return
+    }
+
+    const obj = hexObj(coord)
+    if (!obj) {
+        return
+    }
+
+    const userData = obj.userData
+    if (!isTileObjectData(userData)) {
+        return
+    }
+
+    obj.userData = {
+        coord: userData.coord,
+        targetLevel: targetLevel,
+        initialLevel: userData.initialLevel,
+        textureLoaded: userData.textureLoaded,
+        fallDuration: userData.fallDuration,
+    }
+}
+
+function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number = 2): [Updater, (obj: Object3D, next?: boolean) => Promise<void>, (obj: Object3D) => boolean, (id: number) => boolean] {
 
     function initialSpeed(acceleration: number, height: number, durationSeconds: number): number {
         return -((acceleration * durationSeconds / 2) - ((height / durationSeconds)))
@@ -227,7 +252,36 @@ function tileSpawner(scene: Scene, tilesPerSecond: number, fallDuration: number 
         })
     }
 
-    return [update, spawn]
+    const remove = (t: Object3D) => {
+        const index = tileQueue.findIndex(([obj]) => obj.id === t.id)
+        if (index !== -1) {
+            tileQueue.splice(index, 1)
+            return true
+        }
+
+        return false
+    }
+
+    const prioritize = (id: number) => {
+        const coord = storage.gameCoordById(id);
+        if (!coord) {
+            return false
+        }
+
+        const tile = hexObj(coord);
+        if (!tile) {
+            return false
+        }
+
+        if (remove(tile)) {
+            spawn(tile, true)
+            return true
+        }
+
+        return false
+    }
+
+    return [update, spawn, remove, prioritize]
 }
 
 function gameSurface(scene: Scene, camera: Camera): Updater {
@@ -364,6 +418,37 @@ async function selectTileByGameId(gameId: number) {
     await selectTile(tile, gameId, false, false)
 }
 
+function moveCameraToTile(tile: Object3D) {
+    const startX = orbitControls.target.x
+    const startZ = orbitControls.target.z
+    const targetX = tile.position.x
+    const targetZ = tile.position.z
+    const duration = 0.5 // duration in seconds
+    const startTime = performance.now()
+
+    const animateCamera = () => {
+        const elapsed = (performance.now() - startTime) / 1000
+        const progress = Math.min(elapsed / duration, 1)
+
+        const eased = progress < 0.5
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2
+
+        orbitControls.target.set(
+            startX + (targetX - startX) * eased,
+            orbitControls.target.y,
+            startZ + (targetZ - startZ) * eased
+        )
+        orbitControls.update()
+
+        if (progress < 1) {
+            requestAnimationFrame(animateCamera)
+        }
+    }
+
+    animateCamera()
+}
+
 async function selectTile(tile: Object3D, gameId: number, isNewTile: boolean = false, toggle: boolean = true) {
     if (toggle && currentTile === tile) {
         unselectCurrentTile()
@@ -378,8 +463,7 @@ async function selectTile(tile: Object3D, gameId: number, isNewTile: boolean = f
     }
 
     if (!toggle) {
-        orbitControls.target.set(tile.position.x, orbitControls.target.y, tile.position.z)
-        orbitControls.update()
+        moveCameraToTile(tile);
     }
 
     await ui.openGameInfo(gameId)
@@ -395,6 +479,7 @@ function unselectCurrentTile() {
 
 const canvasContainer = document.querySelector<HTMLElement>('.canvas-container')!
 
+let TILE_SPAWNER: TileSpawner
 export function setupScene()
 {
     const raycaster = new Raycaster()
@@ -432,7 +517,7 @@ export function setupScene()
     const updateLight = setupLight(scene, camera)
     setupControls(camera, renderer)
 
-    const [spawnTiles, enqueueTile] = tileSpawner(scene, 10)
+    const [spawnTiles, enqueueTile, removeQueuedTile, prioritize] = tileSpawner(scene, 10)
     const updateGameSurface = gameSurface(scene, camera)
 
     // const material = new MeshBasicMaterial({
@@ -514,6 +599,13 @@ export function setupScene()
     // Start animation loop
     requestAnimationFrame(animate)
 
+    TILE_SPAWNER = {enqueueTile, removeQueuedTile, prioritize}
+}
+
+export interface TileSpawner {
+    enqueueTile(obj: Object3D, next?: boolean): Promise<void>
+    removeQueuedTile(obj: Object3D): boolean
+    prioritize(id: number): boolean
 }
 
  function hexObj(coord: CubeCoord) {
@@ -524,4 +616,7 @@ export let scene = {
     hexObj,
     setCoverImage,
     selectTileByGameId,
+    updateGameIdUserDataTargetLevel,
+    selectedHeight,
+    spawner: () => TILE_SPAWNER,
 }  as const
