@@ -746,17 +746,18 @@ export function setupScene()
                     return
                 }
                 cooldowns.set(key, 100 + Math.random() * 100);
+                // cooldowns.set(key, 200);
 
                 let pSpawner = PARTICLE_SPAWNERS.get(key)
                 if (pSpawner) {
-                    let pos = keyToCoord(coord).toWorld(5, gridSize)
+                    let pos = keyToCoord(coord).toWorld(20, gridSize)
                     let width = 80;
                     let angle = Math.random() * Math.PI * 2;
                     let radius = Math.random() * width / 2;
                     let rPos = new Vector3(pos.x + Math.cos(angle) * radius,
                         pos.y,
                         pos.z + Math.sin(angle) * radius)
-
+                    // rPos = new Vector3(pos.x, pos.y, pos.z)
                     pSpawner.spawn(rPos)
                 }
             })
