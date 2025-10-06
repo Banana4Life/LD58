@@ -497,7 +497,6 @@ export async function setupScene()
 
 // Handle window resize
     const onWindowResize = (): void => {
-        console.log("resize", canvasContainer.clientWidth, canvasContainer.clientHeight)
         camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
