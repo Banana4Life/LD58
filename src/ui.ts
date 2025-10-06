@@ -15,6 +15,8 @@ const LOCALSTORAGE_USER = "user";
 let dlgUserName = document.querySelector<HTMLDialogElement>("#dlg-username")!;
 dlgUserName.querySelector("form")?.addEventListener("submit", saveUserName)
 
+let dlgAwardRanking = document.querySelector<HTMLDialogElement>("#dlg-award-ranking")!;
+
 let dlgOk = document.querySelector<HTMLDialogElement>("#dlg-ok")!;
 let dlgOkCb: (() => void) | null = null;
 let dlgBtnOk = dlgOk.querySelector(".dlg-btn-ok")!;
@@ -35,8 +37,9 @@ let headerGame = headerElement.querySelector<HTMLElement>(".game")!;
 
 let playerNamePlate = document.querySelector("#player")!;
 let btnChangeUser = document.querySelector("#btn-change-user")!;
-
 btnChangeUser.addEventListener("click", openUsernameDialog)
+let btnAwardRanking = document.querySelector("#btn-award-ranking")!;
+btnAwardRanking.addEventListener("click", openAwardRanking)
 
 
 let dlgLogo = document.querySelector<HTMLDialogElement>("#dlg-logo")!;
@@ -50,6 +53,7 @@ let gameStarsContainer = dlgGame.querySelector<HTMLElement>(".stars")!
 
 let dlgGames = document.querySelector("#dlg-games")!
 let dlgGamesTemplate = document.querySelector<HTMLTemplateElement>("#prev-game-template")!
+let dlgAwardRankingTemplate = document.querySelector<HTMLTemplateElement>("#award-ranking-template")!
 
 
 btbWebGameOpener.addEventListener("click", (e) => {
@@ -80,6 +84,10 @@ let dlgAwards =  document.querySelector<HTMLDialogElement>("#dlg-awards")!;
 let btnCloseAwards = dlgAwards.querySelector<HTMLButtonElement>(".dlg-btn-close-award")
 btnCloseAwards?.addEventListener("click", () => {
     dlgAwards.close()
+})
+let btnCloseAwardRanking = dlgAwardRanking.querySelector<HTMLButtonElement>(".dlg-btn-close-award-ranking")
+btnCloseAwardRanking?.addEventListener("click", () => {
+    dlgAwardRanking.close()
 })
 
 
@@ -290,6 +298,28 @@ function setDatasetStars(rating: number, dlg: HTMLDialogElement) {
     let starIndex = Math.ceil((rating / 2) - 1);
     dlg.dataset.rating = starIndex.toString()
     dlg.dataset.halfRating = (rating % 2 === 1).toString()
+}
+
+function openAwardRanking() {
+    dlgAwardRanking.querySelectorAll<HTMLDivElement>(`.award-ranking`).forEach(game => game.remove())
+
+    const topAwards = storage.topAwards();
+    for (let {gameId, awardCount} of topAwards) {
+        appendTopAwardGame(gameId, awardCount)
+    }
+    dlgAwardRanking.showModal()
+}
+
+function appendTopAwardGame(gameId: number, awardCount: number) {
+    let clone = document.importNode(dlgAwardRankingTemplate.content, true)
+    clone.querySelector(".name")!.textContent = storage.gameById(gameId).name
+    clone.querySelector(".count")!.textContent = awardCount.toString()
+    const gameIdDiv = document.createElement("div")
+    gameIdDiv.classList.add("award-ranking")
+    gameIdDiv.dataset.gameId = gameId.toString()
+    gameIdDiv.appendChild(clone)
+    dlgAwardRanking.prepend(gameIdDiv)
+    gameIdDiv.addEventListener("click",  () => scene.selectTileByGameId(gameId))
 }
 
 async function openGameInfo(gameId: number) {

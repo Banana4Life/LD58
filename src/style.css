@@ -71,6 +71,28 @@ header {
 
     }
 
+    #awards {
+        display: flex;
+        gap: 5px;
+
+        button {
+            padding: 0 8px;
+            border: 0;
+            border-right: 2px solid black;
+
+            font-size: 16px;
+            background: #2288F7;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        background: #f79122;
+        span {
+            padding: 2px;
+        }
+    }
+
     .game {
         padding-left: 5px;
         padding-right: 5px;
@@ -311,6 +333,30 @@ header {
     }
 }
 
+#dlg-award-ranking {
+    max-width: 50%;
+    .award-ranking {
+        .content {
+            padding-left:10px;
+            padding-right:10px;
+            gap: 15px;
+            display: flex;
+            justify-content: space-between;
+
+            .name {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .award-count {
+                min-width: 75px;
+                display: flex;
+                justify-content: space-between;
+            }
+        }
+    }
+}
 
 #dlg-rating {
     .stars {

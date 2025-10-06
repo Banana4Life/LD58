@@ -1,5 +1,5 @@
 import {CubeCoord} from "./util/tilegrid.ts";
-import {Award,  GameInfo, GivenAward, JamStats, server} from "./server.ts";
+import {Award, GameInfo, GivenAward, JamStats, server} from "./server.ts";
 import {scene} from "./scene.ts";
 import {getJam} from "./util";
 
@@ -193,6 +193,18 @@ async function attemptPlacingGame(gameId: number, i: number = 0) {
     }
 }
 
+function topAwards(): {gameId: number, awardCount: number}[] {
+    const slice = Array.from(AWARDS_MAP.entries())
+        .map(([gameId, awards]) => ({
+            gameId,
+            awardCount: awards.length
+        }))
+        .sort((a, b) => b.awardCount - a.awardCount)
+        .slice(0, 10);
+    slice.reverse()
+    return slice;
+}
+
 function givenAwards(gameId: number) {
     let awards = AWARDS_MAP.get(gameId) || []
     return awards;
@@ -263,6 +275,7 @@ export let storage = {
     awardsParticleCooldowns,
     givenAwards,
     giveAward,
+    topAwards,
     clearUserRatingsCache,
     getUserRating,
     getUserRatings,
