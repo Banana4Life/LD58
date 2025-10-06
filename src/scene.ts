@@ -682,7 +682,7 @@ export function setupScene()
     camera.getWorldPosition(camWorldPos)
     loadTilesAround(CubeCoord.ORIGIN)
 
-    let uncoverSemaphore = 3
+    let uncoverSemaphore = 1
     renderer.domElement.addEventListener('click', async () => {
         if (uncoverSemaphore <= 0) {
             return
