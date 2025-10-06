@@ -44,7 +44,7 @@ async function placeNextGameAt(coord: CubeCoord, tries: number = 0): Promise<Gam
         }
     } else {
         console.log("No next game available. Try Fetching more...")
-        await allGames()
+        await fetchAllGames()
     }
 
     return undefined;
@@ -63,7 +63,7 @@ async function init() {
     JAM_STATS = await server.fetchJamStats(JAM_NAME)
     await fetchPlacedGames()
     await fetchGameAwards()
-    await allGames();
+    await fetchAllGames();
 
     setInterval(async () => {
         await fetchPlacedGames()
@@ -74,7 +74,7 @@ async function init() {
     console.log("Storage Initialized!")
 }
 
-async function allGames() {
+async function fetchAllGames() {
     let games = await server.findGames(JAM_NAME);
     games.forEach(g => GAMES_BY_ID.set(g.id, g));
     console.log(games.length, "games preloaded for LD", JAM_NAME)
@@ -175,7 +175,7 @@ async function attemptPlacingGame(gameId: number, i: number = 0) {
     if (result === gameId) {
         let hexObj = scene.hexObj(coord);
         if (hexObj) {
-            await allGames();
+            await fetchAllGames();
             scene.setCoverImage(hexObj, gameById(gameId).cover)
         }
         return
