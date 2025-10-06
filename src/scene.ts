@@ -374,11 +374,7 @@ const canvasContainer = document.querySelector<HTMLElement>('.canvas-container')
 
 export async function setupScene()
 {
-    const pointer = new Vector2()
-    document.addEventListener('mousemove', e => {
-        pointer.x = ( e.clientX / window.innerWidth ) * 2 - 1;
-        pointer.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
-    })
+
 
     const raycaster = new Raycaster()
 
@@ -390,6 +386,13 @@ export async function setupScene()
     scene.add(camera)
     camera.translateY(100)
     const canvas = document.querySelector<HTMLCanvasElement>('#main-canvas')!
+    const pointer = new Vector2()
+    document.addEventListener('mousemove', e => {
+        pointer.x = ( e.clientX / canvas.width ) * 2 - 1;
+        pointer.y = - ( e.clientY /  canvas.height ) * 2 + 1;
+    })
+
+
     const renderer = new WebGLRenderer({
         antialias: true,
         canvas: canvas
@@ -476,15 +479,18 @@ export async function setupScene()
 
 // Handle window resize
     const onWindowResize = (): void => {
+        console.log("resize", canvasContainer.clientWidth, canvasContainer.clientHeight)
         camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
     };
 
     window.addEventListener('resize', onWindowResize, false);
+    onWindowResize()
 
     // Start animation loop
     requestAnimationFrame(animate)
+
 }
 
  function hexObj(coord: CubeCoord) {
