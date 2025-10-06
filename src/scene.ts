@@ -661,7 +661,11 @@ export function setupScene()
     camera.getWorldPosition(camWorldPos)
     loadTilesAround(CubeCoord.ORIGIN)
 
+    let uncoverSemaphore = 3
     renderer.domElement.addEventListener('click', async () => {
+        if (uncoverSemaphore <= 0) {
+            return
+        }
         const intersects = raycaster.intersectObjects( scene.children, true );
         if (Array.isArray(intersects) && intersects.length > 0) {
             for (let intersect of intersects) {
@@ -674,6 +678,7 @@ export function setupScene()
                             if (info && info.cover) {
                                 unselectCurrentTile()
                                 const newObj = createHex(data.coord, info?.cover, camWorldPos.y, 1)
+                                uncoverSemaphore--
                                 asTileObjectData(newObj)
                                     ?.textureLoaded
                                     ?.then(() => {
@@ -682,6 +687,7 @@ export function setupScene()
                                 ?.then(async play => {
                                     trySelectTile(data.coord, newObj)
                                     await enqueueTile(newObj, true);
+                                    uncoverSemaphore++
                                     return play;
                                 })
                                 ?.then(async play => {
