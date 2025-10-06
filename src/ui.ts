@@ -342,7 +342,9 @@ function openAwards() {
                             <div class="aw-${1}">${award.icon}</div>
                         </div>
                         
-                        <div class="name">${award.name}</div>
+                        <div class="name">
+                            <div>${award.name}</div>
+                        </div>
                         
                         <div class="bg count">
                             <img src="${certificate}">

@@ -276,12 +276,17 @@ header {
             }
 
             .name {
-                margin: 2px;
                 color: white;
                 font-weight: bold;
                 background: rgba(0,0,0, 0.6);
-                border-radius: 10px;
+                border-bottom-left-radius: 9px;
+                border-bottom-right-radius: 9px;
+                border-top: 1px solid black;
                 padding: 2px;
+                height: 45px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
             }
         }
     }
