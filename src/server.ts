@@ -63,7 +63,7 @@ async function findGames(jam: string) {
         .then(r => r as GameInfo[])
 }
 
-async function fetchHexGrid(jam: string): Promise<Map<string, number>> {
+async function fetchPlacedGames(jam: string): Promise<Map<string, number>> {
     let url = getBackendUrlFor(`/ld58/hexGrid`) + `?jam=${jam}`
     debug("GET", url)
     return fetch(url)
@@ -88,7 +88,7 @@ async function fetchJamStats(jam: string): Promise<JamStats> {
         .then(r => r as JamStats)
 }
 
-async function fetchAwards(){
+async function fetchAwardsDefs(){
     let url = getBackendUrlFor(`/ld58/awards`).toString()
     debug("GET", url)
     return fetch(url)
@@ -141,10 +141,10 @@ async function postRating(gameId: number, user: string, rating: number){
 export let server = {
     findUserGames,
     findGames,
-    fetchHexGrid,
+    fetchPlacedGames,
     postHexGridGame,
     fetchJamStats,
-    fetchAwards,
+    fetchAwardsDefs,
     fetchGivenAwards,
     postAward,
     fetchUserRatings,

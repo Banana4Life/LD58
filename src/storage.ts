@@ -1,12 +1,11 @@
 import {CubeCoord} from "./util/tilegrid.ts";
 import {Award,  GameInfo, GivenAward, JamStats, server} from "./server.ts";
 import {scene} from "./scene.ts";
-import {TextureLoader} from "three";
 import {getJam} from "./util";
 
 export const JAM_NAME = getJam();
 
-const HEX_GRID = new Map<string, number>
+const GAMEID_BY_COORD = new Map<string, number>
 const AWARDS_MAP = new Map<number, GivenAward[]>
 const RATINGS_MAP = new Map<number, number>
 const COORD_BY_GAMEID = new Map<number, string>
@@ -27,7 +26,7 @@ async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> 
     let coolGames = Array.from(GAMES_BY_ID.values())
         .sort((a, b) => b.cool - a.cool)
 
-    const next = coolGames.find(g => !(new Set(HEX_GRID.values()).has(g.id)))
+    const next = coolGames.find(g => !(new Set(GAMEID_BY_COORD.values()).has(g.id)))
 
     if (next) {
         let result = await setGame(coord, next.id)
@@ -35,7 +34,7 @@ async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> 
             return next
         }
         if (result == 0) {
-            await hexGrid()
+            await fetchPlacedGames()
         }
     } else {
         console.log("No next game available. Try Fetching more...")
@@ -47,21 +46,25 @@ async function placeNextGameAt(coord: CubeCoord): Promise<GameInfo | undefined> 
 
 function nextFreeCoord() {
     for (let cubeCoord of CubeCoord.ORIGIN.shuffledRingsAround(0, 10)) {
-        if (!HEX_GRID.get(coordToKey(cubeCoord))) {
+        if (!GAMEID_BY_COORD.get(coordToKey(cubeCoord))) {
             return cubeCoord
         }
     }
     throw new Error("No free coord found")
 }
 
-
-
 async function init() {
     JAM_STATS = await server.fetchJamStats(JAM_NAME)
-    await hexGrid()
-    await awardMap()
+    await fetchPlacedGames()
+    await fetchGameAwards()
     await allGames();
-    AWARD_OBJECTS = await server.fetchAwards()
+
+    setInterval(async () => {
+        await fetchPlacedGames()
+        await fetchGameAwards()
+    }, 30000) // 30s
+
+    AWARD_OBJECTS = await server.fetchAwardsDefs()
     console.log("Storage Initialized!")
 }
 
@@ -71,19 +74,40 @@ async function allGames() {
     console.log(games.length, "games preloaded for LD", JAM_NAME)
 }
 
-async function hexGrid(): Promise<Map<string, number>> {
-    if (HEX_GRID.size === 0) {
-        // TODO this never updates atm.
-        let serverGrid = await server.fetchHexGrid(JAM_NAME)
-        serverGrid.forEach((v, k) => HEX_GRID.set(k, v))
-        serverGrid.forEach((v, k) => COORD_BY_GAMEID.set(v, k))
-        // console.log("Initial HexGrid is:")
-        // console.table(HEX_GRID)
+async function updateGameTexture(gameId: number, coord: string) {
+    // console.log("New Game", coord, gameId)
+    let cover = gameById(gameId).cover
+    if (cover != null) {
+        let tile = scene.hexObj(keyToCoord(coord))
+        if (tile) {
+            await scene.setCoverImage(tile, cover)
+        }
     }
-    return HEX_GRID
 }
 
-async function awardMap(): Promise<Map<number, GivenAward[]>> {
+async function fetchPlacedGames(): Promise<any> {
+    let serverGrid = await server.fetchPlacedGames(JAM_NAME)
+    if (GAMEID_BY_COORD.size > 0) {
+        for (let [coord, gameId] of serverGrid) {
+            let foundGameId = GAMEID_BY_COORD.get(coord)
+            let foundCoord = COORD_BY_GAMEID.get(gameId)
+            if (!foundCoord || !foundGameId) {
+                await updateGameTexture(gameId, coord);
+            }
+
+        }
+    }
+
+    // TODO deletions are not possible?
+    GAMEID_BY_COORD.clear()
+    COORD_BY_GAMEID.clear()
+    serverGrid.forEach((v, k) => GAMEID_BY_COORD.set(k, v))
+    serverGrid.forEach((v, k) => COORD_BY_GAMEID.set(v, k))
+    // console.log("fetchplacedgames", GAMEID_BY_COORD.size)
+
+}
+
+async function fetchGameAwards(): Promise<Map<number, GivenAward[]>> {
     if (AWARDS_MAP.size === 0) {
         // TODO this never updates atm.
         let givenAwards = await server.fetchGivenAwards(JAM_NAME)
@@ -95,15 +119,24 @@ async function awardMap(): Promise<Map<number, GivenAward[]>> {
 }
 
 async function setGame(coord: CubeCoord, gameId: number) {
-    let result = await server.postHexGridGame(coord, gameId)
-    if (result === gameId) {
-        HEX_GRID.set(coordToKey(coord), gameId)
+    let resultGameId = await server.postHexGridGame(coord, gameId)
+    let coordKey = coordToKey(coord);
+    if (resultGameId === gameId) {
+        GAMEID_BY_COORD.set(coordKey, gameId)
+        COORD_BY_GAMEID.set(gameId, coordKey)
         console.log("Post Hex Grid Success!", coord, gameId)
     } else {
-        HEX_GRID.set(coordToKey(coord), result)
-        console.log("Post Hex Grid Failed!", coord, "expected", gameId, "found", result == 0 ? "already placed" : result)
+        if (resultGameId !== 0) {
+            GAMEID_BY_COORD.set(coordKey, resultGameId)
+            COORD_BY_GAMEID.set(resultGameId, coordKey)
+            updateGameTexture(resultGameId, coordKey)
+        } else {
+            GAMEID_BY_COORD.delete(coordKey)
+            COORD_BY_GAMEID.delete(resultGameId)
+        }
+        console.log("Post Hex Grid Failed!", coord, "expected", gameId, "found", resultGameId == 0 ? "already placed" : resultGameId)
     }
-    return result
+    return resultGameId
 }
 
 function gameCoordById(gameId: number): CubeCoord | undefined {
@@ -125,7 +158,7 @@ function gameById(gameId: number): GameInfo {
 }
 
 function gameAt(coord: CubeCoord) {
-    return HEX_GRID.get(coordToKey(coord))
+    return GAMEID_BY_COORD.get(coordToKey(coord))
 }
 
 async function attemptPlacingGame(gameId: number, i: number = 0) {
@@ -135,7 +168,7 @@ async function attemptPlacingGame(gameId: number, i: number = 0) {
         let hexObj = scene.hexObj(coord);
         if (hexObj) {
             await allGames();
-            scene.setCoverImage(hexObj, new TextureLoader(), gameById(gameId).cover)
+            scene.setCoverImage(hexObj, gameById(gameId).cover)
         }
         return
     }
@@ -198,8 +231,8 @@ export let storage = {
     placeNextGameAt,
     gameCoordById,
     attemptPlacingGame,
-    hexGrid,
-    knownHexGrid: () => HEX_GRID,
+    fetchPlacedGames: fetchPlacedGames,
+    knownPlacedGames: () => GAMEID_BY_COORD,
     gameAt,
     gameById,
     givenAwards,

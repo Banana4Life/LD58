@@ -108,14 +108,14 @@ function enableShadows(obj: Object3D) {
     })
 }
 
-function setCoverImage(obj: Object3D, textureLoader: TextureLoader, coverUrl: string | null): Promise<void> {
+function setCoverImage(obj: Object3D, coverUrl: string | null): Promise<void> {
     const childMesh = obj.children[0] as Mesh
     let targetMaterials = ["hex-triangle-1", "hex-triangle-2", "hex-triangle-3", "hex-triangle-4", "hex-triangle-5", "hex-triangle-6", "border"];
     if (coverUrl) {
         return new Promise(resolve => {
             const cachableUrl = new URL(coverUrl)
             cachableUrl.searchParams.set("cacheKey", "2025-10-05")
-            textureLoader.load(cachableUrl.toString(), (t) => {
+            TEXTURE_LOADER.load(cachableUrl.toString(), (t) => {
                 t.anisotropy = 16
                 setTexture(childMesh, targetMaterials, t, Color.NAMES.white, 20)
                 resolve()
@@ -127,7 +127,7 @@ function setCoverImage(obj: Object3D, textureLoader: TextureLoader, coverUrl: st
     }
 }
 
-function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: string | null, fallFrom: number, fallDuration?: number, initialLevel: number = 0): Object3D {
+function createHex(coord: CubeCoord, coverUrl: string | null, fallFrom: number, fallDuration?: number, initialLevel: number = 0): Object3D {
     const hex = Models.Hexagon.object.clone(true);
     enableShadows(hex)
     // noinspection UnnecessaryLocalVariableJS
@@ -135,7 +135,7 @@ function createHex(coord: CubeCoord, textureLoader: TextureLoader, coverUrl: str
         coord,
         targetLevel: initialLevel,
         initialLevel: fallFrom,
-        textureLoaded: setCoverImage(hex, textureLoader, coverUrl),
+        textureLoaded: setCoverImage(hex, coverUrl),
         fallDuration,
     }
     hex.userData = data
@@ -481,23 +481,21 @@ const canvasContainer = document.querySelector<HTMLElement>('.canvas-container')
 let TILE_SPAWNER: TileSpawner
 
 function loadTilesAround(origin: CubeCoord, maxRings: number = 6) {
-    storage.hexGrid().then(serverGrid => {
-        let tiles: Object3D[] = []
-        for (let cubeCoord of origin.shuffledRingsAround(0, maxRings)) {
-            const coord = coordToKey(cubeCoord);
-            const gameId = serverGrid.get(coord)
-            const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
-            let hexObj = HEX_GRID_OBJ.get(coord)
-            if (!hexObj) {
-                hexObj = createHex(cubeCoord, TEXTURE_LOADER, coverUrl, FALL_START_HEIGHT, 0.6);
-                HEX_GRID_OBJ.set(coord, hexObj)
-            }
-
-            tiles.push(hexObj)
+    let tiles: Object3D[] = []
+    for (let cubeCoord of origin.shuffledRingsAround(0, maxRings)) {
+        const coord = coordToKey(cubeCoord);
+        const gameId = storage.knownPlacedGames().get(coord)
+        const coverUrl = (!!gameId) ? storage.gameById(gameId).cover : null
+        let hexObj = HEX_GRID_OBJ.get(coord)
+        if (!hexObj) {
+            hexObj = createHex(cubeCoord, coverUrl, FALL_START_HEIGHT, 0.6);
+            HEX_GRID_OBJ.set(coord, hexObj)
         }
 
-        TILE_SPAWNER.spawnBatch(tiles);
-    })
+        tiles.push(hexObj)
+    }
+
+    TILE_SPAWNER.spawnBatch(tiles);
 }
 
 export function setupScene()
@@ -564,7 +562,7 @@ export function setupScene()
                             if (info && info.cover) {
                                 parent.position.y += SELECTED_HEIGHT
                                 unselectCurrentTile()
-                                const newObj = createHex(data.coord, TEXTURE_LOADER, info?.cover, camWorldPos.y, 1, parent.position.y)
+                                const newObj = createHex(data.coord, info?.cover, camWorldPos.y, 1, parent.position.y)
                                 asTileObjectData(newObj.userData)
                                     ?.textureLoaded
                                     ?.then(() => {
@@ -601,11 +599,17 @@ export function setupScene()
         if (lastCenterCoord.q !== centerCoord.q || lastCenterCoord.r !== centerCoord.r) {
             lastCenterCoord = centerCoord;
             let wantSpiral = [...centerCoord.shuffledRingsAround(0, 6)]
-            let containsKnown = wantSpiral.find(cc => storage.knownHexGrid().has(coordToKey(cc)))
+            let containsKnown = wantSpiral.find(cc => storage.knownPlacedGames().has(coordToKey(cc)))
             // console.log(coordToKey(centerCoord), containsKnown)
-            if (containsKnown && wantSpiral.filter(coord => !HEX_GRID_OBJ.has(coordToKey(coord))).length > 0) {
-                loadTilesAround(centerCoord, 6)
+            let wantsMore = wantSpiral.filter(coord => !HEX_GRID_OBJ.has(coordToKey(coord))).length > 0;
+            if (wantsMore) {
+                if (containsKnown) {
+                    loadTilesAround(centerCoord, 6)
+                } else {
+                    storage.fetchPlacedGames() // Fetch new data
+                }
             }
+
         }
 
 
