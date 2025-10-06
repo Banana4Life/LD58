@@ -318,7 +318,7 @@ function appendTopAwardGame(gameId: number, awardCount: number) {
     gameIdDiv.classList.add("award-ranking")
     gameIdDiv.dataset.gameId = gameId.toString()
     gameIdDiv.appendChild(clone)
-    dlgAwardRanking.prepend(gameIdDiv)
+    dlgAwardRanking.querySelector(`.content`)!.append(gameIdDiv)
     gameIdDiv.addEventListener("click",  () => scene.selectTileByGameId(gameId))
 }
 

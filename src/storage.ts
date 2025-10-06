@@ -188,15 +188,13 @@ async function attemptPlacingGame(gameId: number, i: number = 0) {
 }
 
 function topAwards(): {gameId: number, awardCount: number}[] {
-    const slice = Array.from(AWARDS_MAP.entries())
+    return Array.from(AWARDS_MAP.entries())
         .map(([gameId, awards]) => ({
             gameId,
             awardCount: awards.length
         }))
         .sort((a, b) => b.awardCount - a.awardCount)
         .slice(0, 10);
-    slice.reverse()
-    return slice;
 }
 
 function givenAwards(gameId: number) {
