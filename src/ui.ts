@@ -355,8 +355,8 @@ function openAwards() {
                     </button>`
     }).join("")
     for (let btn of content!.querySelectorAll("button")) {
-        btn.addEventListener("click", () => {
-            let newCount = storage.giveAward(currentGameId(), currentUser(), btn.dataset.award!)
+        btn.addEventListener("click", async () => {
+            let newCount = await storage.giveAward(currentGameId(), currentUser(), btn.dataset.award!)
             btn.querySelector(".bg.count span")!.textContent = newCount.toString();
         })
     }

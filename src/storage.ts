@@ -151,16 +151,19 @@ function givenAwards(gameId: number) {
     return awards;
 }
 
-function giveAward(gameId: number, user: string, awardKey: string) {
+async function giveAward(gameId: number, user: string, awardKey: string) {
     let awards = givenAwards(gameId)
     let found = awards.find(a => a.byUser === user && a.key === awardKey)
     let count = awards.filter(a => a.key === awardKey).length;
     if (found) {
         return count
     }
-    AWARDS_MAP.set(gameId, [...awards, {key: awardKey, byUser: user}])
-    server.postAward(gameId, user, awardKey)
-    return count + 1
+    return server.postAward(gameId, user, awardKey).then(wasSet => {
+        if (wasSet) {
+            AWARDS_MAP.set(gameId, [...awards, {key: awardKey, byUser: user}])
+        }
+        return wasSet ? count + 1 : count
+    })
 }
 
 function clearUserRatingsCache() {
