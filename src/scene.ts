@@ -370,6 +370,8 @@ function unselectCurrentTile() {
     }
 }
 
+const canvasContainer = document.querySelector<HTMLElement>('.canvas-container')!
+
 export async function setupScene()
 {
     const pointer = new Vector2()
@@ -387,16 +389,19 @@ export async function setupScene()
     const camera = new PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 1000);
     scene.add(camera)
     camera.translateY(100)
+    const canvas = document.querySelector<HTMLCanvasElement>('#main-canvas')!
     const renderer = new WebGLRenderer({
-        antialias: true
+        antialias: true,
+        canvas: canvas
     });
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = PCFSoftShadowMap
 
     const audioListener = new AudioListener()
     scene.add(audioListener)
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+
+    renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+
 
     const updateLight = setupLight(scene, camera)
     setupControls(camera, renderer)
@@ -471,9 +476,9 @@ export async function setupScene()
 
 // Handle window resize
     const onWindowResize = (): void => {
-        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
         camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
     };
 
     window.addEventListener('resize', onWindowResize, false);

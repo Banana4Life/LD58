@@ -42,6 +42,10 @@ let btnAwards = dlgGame.querySelector<HTMLButtonElement>(".dlg-btn-awards")!;
 let gameStars = dlgGame.querySelectorAll<HTMLImageElement>(".star")!
 let gameStarsContainer = dlgGame.querySelector<HTMLElement>(".stars")!
 
+let dlgGames = document.querySelector("#dlg-games")!
+let dlgGamesTemplate = document.querySelector<HTMLTemplateElement>("#prev-game-template")!
+
+
 btbWebGameOpener.addEventListener("click", (e) => {
     console.log("open...", btbWebGameOpener.dataset.url)
     e.preventDefault()
@@ -236,13 +240,22 @@ function currentUser() {
     return localStorage.getItem(LOCALSTORAGE_USER) || '???';
 }
 
-export async function loadUI() {
+async function loadUI() {
     let user = currentUser();
     if (user === null || user === "") {
         openUsernameDialog()
     } else {
         updateNamePlate(user);
+        let ratings = await storage.getUserRatings(currentUser())
+
+        for (let [gameId, rating] of ratings) {
+            let game = storage.gameById(gameId)
+            let starIndex = Math.ceil((rating / 2) - 1);
+            let halfRating = (rating % 2 === 1)
+            appendGame(starIndex, halfRating, game.name)
+        }
     }
+
 }
 
 function openUsernameDialog() {
@@ -290,12 +303,11 @@ async function openGameInfo(gameId: number) {
     setDatasetStars(rating, dlgGame);
     resetStarsToDataSet(dlgGame.dataset, gameStars)
 
-    dlgGame.show()
-
+    dlgGame.style.display = "block"
 }
 
 function closeGameInfo() {
-    dlgGame.close()
+    dlgGame.style.display = "none"
 }
 
 function openWebGame(url: string | undefined) {
@@ -373,6 +385,13 @@ async function openRating() {
 }
 
 
+function appendGame(index: number, half: boolean, name: string) {
+    let clone = document.importNode(dlgGamesTemplate.content, true)
+    clone.querySelector(".content")!.textContent = name
+    setStars(index, half, clone.querySelectorAll<HTMLImageElement>(".star"))
+    dlgGames.prepend(clone)
+}
+
 async function submitRating() {
     let gameId = parseInt(dlgGame.dataset.gameId!)
     let index = parseInt(dlgRating.dataset.rating || "-1")
@@ -385,8 +404,7 @@ async function submitRating() {
     let rating = await server.fetchGameRating(gameId)
     setDatasetStars(rating, dlgGame);
     resetStarsToDataSet(dlgGame.dataset, gameStars)
-
-    // btbWebGameOpener.style.display = 'none'
+    appendGame(index, half, dlgGame.querySelector(".content")!.textContent);
 }
 
 
@@ -400,5 +418,6 @@ function openQuestion(question: string, yesCb: (() => void) | null, noCb: (() =>
 
 export let ui = {
     openGameInfo,
-    closeGameInfo
+    closeGameInfo,
+    loadUI
 } as const

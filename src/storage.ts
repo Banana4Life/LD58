@@ -164,13 +164,19 @@ function giveAward(gameId: number, user: string, awardKey: string) {
 }
 
 async function getUserRating(gameId: number, user: string) {
+    await getUserRatings(user)
+    return RATINGS_MAP.get(gameId) || -1
+}
+
+async function getUserRatings(user: string) {
     if (RATINGS_MAP.size === 0) {
         const userRatings = await server.fetchUserRatings(getJam(), user);
         userRatings.forEach((v, k) => RATINGS_MAP.set(parseInt(k), v))
     }
 
-    return RATINGS_MAP.get(gameId) || -1
+    return RATINGS_MAP;
 }
+
 
 async function setUserRating(gameId: number, user: string, rating: number) {
     if (await server.postRating(gameId, user, rating)) {
@@ -191,6 +197,7 @@ export let storage = {
     givenAwards,
     giveAward,
     getUserRating,
+    getUserRatings,
     setUserRating,
 } as const
 

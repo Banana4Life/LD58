@@ -6,8 +6,6 @@
     <title>LD58 - Three.js Project</title>
 </head>
 <body>
-
-
 <header>
     <div>
         LD58 - GameCollector
@@ -21,11 +19,49 @@
             <span>Game:</span>
             <span class="game-name">???</span>
         </span>
-
     </div>
 </header>
 
-
+<div class="canvas-container">
+    <canvas id="main-canvas"></canvas>
+</div>
+<div class="sidebar">
+    <div id="dlg-game" style="display:none;">
+        <div class="dialog-wrapper">
+            <div class="content-header">
+                <div class="content">
+                    RENDER GAME INFO
+                </div>
+            </div>
+            <div class="stars">
+                <img class="star" src="#">
+                <img class="star" src="#">
+                <img class="star" src="#">
+                <img class="star" src="#">
+                <img class="star" src="#">
+            </div>
+            <div class="buttons">
+                <button class="dlg-btn-webgame">Play the game</button>
+                <button class="dlg-btn-jamgamepage">LDJam (Vote)</button>
+                <button class="dlg-btn-awards">Award a Trophy</button>
+            </div>
+        </div>
+    </div>
+    <template id="prev-game-template">
+        <div class="previous-game">
+            <div class="content">Previous Game</div>
+            <div class="stars">
+                <img class="star" src="#">
+                <img class="star" src="#">
+                <img class="star" src="#">
+                <img class="star" src="#">
+                <img class="star" src="#">
+            </div>
+        </div>
+    </template>
+    <div id="dlg-games">
+    </div>
+</div>
 
 <dialog id="dlg-username" class="dialog">
     <form class="dialog-wrapper">
@@ -42,27 +78,6 @@
             <button class="dlb-btn-cancel">Just Visiting</button>
         </div>
     </form>
-</dialog>
-<dialog id="dlg-game" class="dialog">
-    <div class="dialog-wrapper">
-        <div class="content-header">
-            <div class="content">
-                RENDER GAME INFO
-            </div>
-            <div class="stars">
-                <img class="star" src="#">
-                <img class="star" src="#">
-                <img class="star" src="#">
-                <img class="star" src="#">
-                <img class="star" src="#">
-            </div>
-        </div>
-        <div class="buttons">
-            <button class="dlg-btn-webgame">Play the game</button>
-            <button class="dlg-btn-jamgamepage">LDJam (Vote)</button>
-            <button class="dlg-btn-awards">Award a Trophy</button>
-        </div>
-    </div>
 </dialog>
 <dialog id="dlg-ok" class="dialog">
     <div class="dialog-wrapper">
