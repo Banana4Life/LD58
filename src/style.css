@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
 html, button {
-    font-family: 'Pixelify Sans', SansSerif;
+    font-family: VT323, 'Pixelify Sans', SansSerif;
 }
 
 canvas {
