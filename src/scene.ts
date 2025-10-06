@@ -132,7 +132,28 @@ function setCoverImage(obj: Object3D, coverUrl: string | null): Promise<void> {
             })
         })
     } else {
-        setTexture(childMesh, targetMaterials, null, Color.NAMES.grey, 200)
+
+        const metallicColors: Color[] = [
+            new Color(0xd4af37), // Gold
+            new Color(0xc0c0c0), // Silver
+            new Color(0xb87333), // Copper
+            new Color(0xffd700), // Bright Gold
+            new Color(0xaaa9ad), // Platinum
+            new Color(0x8b8680), // Nickel
+            new Color(0xb0b0b0), // Aluminum
+            new Color(0x7c482b), // Bronze
+            new Color(0x6e7f80), // Steel Blue
+            new Color(0x3b3c36), // Lead
+            new Color(0xe5c27e), // Brass
+            new Color(0x5f4c36), // Antique Bronze
+            new Color(0x7c9a6d), // greenish patina
+        ];
+        const randomIndex = Math.floor(Math.random() * metallicColors.length)
+        const randomMetallicColor = metallicColors[randomIndex]
+        setTexture(childMesh, targetMaterials, null, randomMetallicColor, 150)
+        // const randomColor = new Color(Math.random(), Math.random(), Math.random())
+        // setTexture(childMesh, targetMaterials, null, randomColor, 15)
+        // setTexture(childMesh, targetMaterials, null, Color.NAMES.grey, 200)
         return Promise.resolve()
     }
 }
