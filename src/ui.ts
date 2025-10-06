@@ -3,9 +3,9 @@ import {JAM_NAME, storage} from "./storage.ts";
 import fullStar from './assets/full-star.svg';
 import halfStar from './assets/half-star.svg';
 import emptyStar from './assets/empty-star.svg';
-import award1 from './assets/award-1.svg';
+// import award1 from './assets/award-1.svg';
 import award2 from './assets/award-2.svg';
-import award3 from './assets/award-3.svg';
+// import award3 from './assets/award-3.svg';
 import certificate from './assets/certificate.svg';
 
 
@@ -331,16 +331,16 @@ function openAwards() {
     let givenAwards = storage.givenAwards(currentGameId())
     console.log("open", givenAwards)
     content!.innerHTML = storage.awards().map(award => {
-        const awardObjects = [award1, award2, award3]
-        const awIdx = Math.floor(Math.random() * awardObjects.length);
-        const randomAwardObject = awardObjects[awIdx]
+        // const awardObjects = [award1, award2, award3]
+        // const awIdx = Math.floor(Math.random() * awardObjects.length);
+        // const randomAwardObject = awardObjects[awIdx]
         let cnt = givenAwards.filter(givenAward => givenAward.key === award.key).length
         return `<button data-award="${award.key}">
                         <div class="bg">
-                            <img class="aw-${awIdx}" src="${randomAwardObject}">
+                            <img class="aw-${1}" src="${award2}">
                         </div>
                         <div class="bg icon">
-                            <div class="aw-${awIdx}">${award.icon}</div>
+                            <div class="aw-${1}">${award.icon}</div>
                         </div>
                         
                         <div class="name">${award.name}</div>

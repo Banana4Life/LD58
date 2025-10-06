@@ -25,6 +25,14 @@ header {
     justify-content: space-between;
     border-bottom: 3px solid black;
     padding: 2px;
+
+    font-size: 18px;
+    text-align: center;
+
+    & > div:first-of-type {
+        width: 100%;
+        font-weight: bold;
+    }
 }
 
 .sidebar {
