@@ -419,8 +419,8 @@ let currentTile: Object3D | undefined = undefined
 
 function setupSelectedTileHighlight(mover: SmoothMover, intensity: number = 1): [Object3D, Updater] {
     const target = new Object3D()
-    const light = new SpotLight(Color.NAMES.red, intensity)
-    light.translateY(50)
+    const light = new SpotLight(Color.NAMES.white, 0)
+    light.translateY(45)
     light.angle = Math.PI / 4
     light.target = target
     light.distance = 0
@@ -443,8 +443,6 @@ function setupSelectedTileHighlight(mover: SmoothMover, intensity: number = 1): 
                 cancelLast = new AbortController()
                 const options = {
                     cancellation: cancelLast.signal,
-                    update() {
-                    },
                 }
                 mover.move(group.position, currentCoord?.toWorld(group.position.y, gridSize), 0.1, options).then(() => {
                     light.intensity = intensity
@@ -636,7 +634,7 @@ export function setupScene()
 
 
     const updateLight = setupGlobalLight(scene, camera)
-    const [selectedTileHighlight, updateSelectedTileHighlight] = setupSelectedTileHighlight(smoothMover, 1000)
+    const [selectedTileHighlight, updateSelectedTileHighlight] = setupSelectedTileHighlight(smoothMover,  1000)
     scene.add(selectedTileHighlight)
 
     const [spawnTiles, enqueueTile, removeQueuedTile, spawnBatch] = tileSpawner(scene, 10)
