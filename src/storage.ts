@@ -113,15 +113,9 @@ async function fetchPlacedGames(): Promise<any> {
 
 }
 
-async function fetchGameAwards(): Promise<Map<number, GivenAward[]>> {
-    if (AWARDS_MAP.size === 0) {
-        // TODO this never updates atm.
-        let givenAwards = await server.fetchGivenAwards(JAM_NAME)
-        // console.log(givenAwards)
-
-        givenAwards.forEach((v, k) => AWARDS_MAP.set(parseInt(k), v))
-    }
-    return AWARDS_MAP
+async function fetchGameAwards() {
+    let givenAwards = await server.fetchGivenAwards(JAM_NAME)
+    givenAwards.forEach((v, k) => AWARDS_MAP.set(parseInt(k), v))
 }
 
 async function setGame(coord: CubeCoord, gameId: number) {
