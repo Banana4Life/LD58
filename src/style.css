@@ -132,6 +132,7 @@ header {
                 justify-content: space-between;
             }
             .stars-container {
+
                 margin-top: auto;
                 display: flex;
                 justify-content: center;
@@ -143,6 +144,10 @@ header {
                     cursor: pointer;
                     display: flex;
                     justify-content: center;
+                    &.own-game {
+                        pointer-events: none;
+                        cursor: auto;
+                    }
                 }
 
             }

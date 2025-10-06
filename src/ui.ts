@@ -31,6 +31,8 @@ dlgBtnOk.addEventListener("click", () => {
 
 
 let headerElement = document.querySelector("header")!;
+let headerGame = headerElement.querySelector<HTMLElement>(".game")!;
+
 let playerNamePlate = document.querySelector("#player")!;
 let btnChangeUser = document.querySelector("#btn-change-user")!;
 
@@ -176,10 +178,10 @@ async function updateNamePlate(user: string) {
     console.log("Welcome", user)
     playerNamePlate.querySelector(".player-name")!.textContent = user;
 
-    let game = await server.findUserGames(JAM_NAME, user)
-    headerElement.querySelector(".game")!.classList.remove("has-game");
+    let userGamesInfo = await server.findUserGames(JAM_NAME, user)
+    headerGame.classList.remove("has-game");
 
-    if (game.games.length === 0) {
+    if (userGamesInfo.games.length === 0) {
         const dialogs = [
             `Did you know there are exactly ${storage.stats()?.published} games submitted for LD${JAM_NAME}?`,
             `Did you know there are ${storage.stats()?.signups} signups with ${storage.stats()?.authors} authors for LD${JAM_NAME}?`,
@@ -190,8 +192,8 @@ async function updateNamePlate(user: string) {
         openOkDialog(randomDialog, () => {});
 
     } else {
-        const randomIndex = Math.floor(Math.random() * game.games.length);
-        const randomGame = game.games[randomIndex];
+        const randomIndex = Math.floor(Math.random() * userGamesInfo.games.length);
+        const randomGame = userGamesInfo.games[randomIndex];
 
         if (localStorage.getItem("bells") !== user) {
             openOkDialog(`Does ${randomGame.name} ring a bell? Good.`, () => {
@@ -199,20 +201,20 @@ async function updateNamePlate(user: string) {
             })
         }
 
-        let currentGameName = game.current?.name;
+        let currentGameName = userGamesInfo.current?.name;
         headerElement.querySelector(".game-name")!.textContent = currentGameName || ""
-        if (game.current != null) {
-            headerElement.querySelector(".game")!.classList.add("has-game");
+        if (userGamesInfo.current != null) {
+            headerGame.dataset.owngame = userGamesInfo.current.id.toString()
+            headerGame.classList.add("has-game");
         }
 
-        if (game.current) {
-            let coord = storage.gameCoordById(game.current.id);
+        if (userGamesInfo.current) {
+            let coord = storage.gameCoordById(userGamesInfo.current.id);
             if (!coord) {
-                await storage.attemptPlacingGame(game.current.id);
-
+                await storage.attemptPlacingGame(userGamesInfo.current.id);
                 // TODO teleport to
             } else {
-                console.log(user, "your game", game.current.id, "is already placed @", coord)
+                console.log(user, "your game", userGamesInfo.current.id, "is already placed @", coord)
             }
         } else {
             console.log(user, "You have no game")
@@ -287,6 +289,13 @@ async function openGameInfo(gameId: number) {
 
     console.log("Open Game", gameId)
 
+    console.log(headerGame.dataset)
+    if (headerGame.dataset.owngame === gameId.toString()) {
+        gameStarsContainer.classList.add("own-game")
+    } else {
+        gameStarsContainer.classList.remove("own-game")
+    }
+
     dlgGame.dataset.gameId = gameId.toString();
     dlgGame.querySelector(".content")!.textContent = info.name
     dlgGame.querySelector<HTMLImageElement>(".count img")!.src = certificate;
@@ -318,14 +327,16 @@ function openWebGame(url: string | undefined) {
     if (url) {
         popupWindow = window.open(url, "_blank", "resizable=no,toolbar=no,scrollbars=no,menubar=no,status=no,directories=no");
 
-        const interval = setInterval(() => {
-            if (popupWindow === null || popupWindow.closed) {
-                clearInterval(interval);
-                openQuestion("Thanks for Playing. Did it work?", openRating, reportBrokenGame)
-                // TODO trophies
-                // TODO if logged in note that we played a game
-            }
-        }, 100);
+        if (headerGame.dataset.owngame !== currentGameId().toString()) {
+            const interval = setInterval(() => {
+                if (popupWindow === null || popupWindow.closed) {
+                    clearInterval(interval);
+                    openQuestion("Thanks for Playing. Did it work?", openRating, reportBrokenGame)
+                }
+            }, 100);
+        }
+
+
     }
 }
 
@@ -374,8 +385,8 @@ function currentGameId() {
 
 function reportBrokenGame() {
     let gameId = currentGameId();
+    // TODO remove broken games when reported a bunch?
     console.log("TODO report broken game ", gameId)
-
 }
 
 async function openRating() {
@@ -383,7 +394,6 @@ async function openRating() {
 }
 
 async function openSpecificRating(gameId: number) {
-
     const rating = await storage.getUserRating(gameId, currentUser())
     setDatasetStars(rating, dlgRating)
     resetStarsToDataSet(dlgRating.dataset, ratingStars)
