@@ -670,11 +670,14 @@ export function setupScene()
                                     ?.then(() => {
                                         return Sounds.DropSlap.prepare(audioListener)
                                     })
-                                ?.then(play => enqueueTile(newObj, true).then(() => play))
+                                ?.then(async play => {
+                                    trySelectTile(data.coord, newObj)
+                                    await enqueueTile(newObj, true);
+                                    return play;
+                                })
                                 ?.then(async play => {
                                     play()
                                     parent.removeFromParent()
-                                    await trySelectTile(data.coord, newObj)
                                 })
                             }
                         }
