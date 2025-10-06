@@ -72,74 +72,77 @@
     </div>
 </div>
 
-<dialog id="dlg-username" class="dialog">
-    <form class="dialog-wrapper">
-        <div class="content">
-            <label>
-                <div>
-                    What is your LDJam username?
-                </div>
-                <input name="jamuser" autocomplete="off" type="text"/>
-                <!-- So that Browsers don't try to autocomplete -->
-                <input name = "DummyUsername" type="text" style="display:none;">
-                <input name = "DummyPassword" type="password" style="display:none;">
-            </label>
+<div class="dialogs">
+    <dialog id="dlg-username" class="dialog">
+        <form class="dialog-wrapper">
+            <div class="content">
+                <label>
+                    <div>
+                        What is your LDJam username?
+                    </div>
+                    <input name="jamuser" autocomplete="off" type="text"/>
+                    <!-- So that Browsers don't try to autocomplete -->
+                    <input name = "DummyUsername" type="text" style="display:none;">
+                    <input name = "DummyPassword" type="password" style="display:none;">
+                </label>
+            </div>
+            <div class="buttons">
+                <button class="dlg-btn-submit">Submit</button>
+                <button class="dlb-btn-cancel">Just Visiting</button>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="dlg-ok" class="dialog">
+        <div class="dialog-wrapper">
+            <div class="content">
+                What is your LDJam username?
+            </div>
+            <div class="buttons">
+                <button class="dlg-btn-ok">OK</button>
+            </div>
         </div>
-        <div class="buttons">
-            <button class="dlg-btn-submit">Submit</button>
-            <button class="dlb-btn-cancel">Just Visiting</button>
+    </dialog>
+    <dialog id="dlg-yes-no" class="dialog">
+        <div class="dialog-wrapper">
+            <div class="content">
+                QUESTION
+            </div>
+            <div class="buttons">
+                <button class="dlg-btn-yes">Yes</button>
+                <button class="dlg-btn-no">No</button>
+            </div>
         </div>
-    </form>
-</dialog>
-<dialog id="dlg-ok" class="dialog">
-    <div class="dialog-wrapper">
-        <div class="content">
-            What is your LDJam username?
+    </dialog>
+    <dialog id="dlg-rating" class="dialog">
+        <div class="dialog-wrapper">
+            <div class="content">
+                Overall Rating?
+            </div>
+            <div class="stars">
+                <img class="star" src="#">
+                <img class="star" src="#">
+                <img class="star" src="#">
+                <img class="star" src="#">
+                <img class="star" src="#">
+            </div>
+            <div class="buttons">
+                <button class="dlg-btn-submit-rating">Ok</button>
+                <button class="dlg-btn-cancel-rating">Cancel</button>
+            </div>
         </div>
-        <div class="buttons">
-            <button class="dlg-btn-ok">OK</button>
+    </dialog>
+    <dialog id="dlg-awards" class="dialog">
+        <div class="dialog-wrapper">
+            <div class="content">
+                AWARD BUTTONS
+            </div>
+            <div class="buttons">
+                <button class="dlg-btn-close-award">Ok</button>
+            </div>
         </div>
-    </div>
-</dialog>
-<dialog id="dlg-yes-no" class="dialog">
-    <div class="dialog-wrapper">
-        <div class="content">
-            QUESTION
-        </div>
-        <div class="buttons">
-            <button class="dlg-btn-yes">Yes</button>
-            <button class="dlg-btn-no">No</button>
-        </div>
-    </div>
-</dialog>
-<dialog id="dlg-rating" class="dialog">
-    <div class="dialog-wrapper">
-        <div class="content">
-            Overall Rating?
-        </div>
-        <div class="stars">
-            <img class="star" src="#">
-            <img class="star" src="#">
-            <img class="star" src="#">
-            <img class="star" src="#">
-            <img class="star" src="#">
-        </div>
-        <div class="buttons">
-            <button class="dlg-btn-submit-rating">Ok</button>
-            <button class="dlg-btn-cancel-rating">Cancel</button>
-        </div>
-    </div>
-</dialog>
-<dialog id="dlg-awards" class="dialog">
-    <div class="dialog-wrapper">
-        <div class="content">
-          AWARD BUTTONS
-        </div>
-        <div class="buttons">
-            <button class="dlg-btn-close-award">Ok</button>
-        </div>
-    </div>
-</dialog>
+    </dialog>
+</div>
+
 
 <script type="module" src="/src/main.ts"></script>
 

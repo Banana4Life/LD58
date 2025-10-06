@@ -152,13 +152,6 @@ header {
 
 .dialog {
     min-width: 20%;
-    min-height: 100px;
-    height: 100px;
-
-
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
 
     background: gray;
     border: 3px solid blue;
@@ -215,7 +208,6 @@ header {
 
 #dlg-awards {
     width: 50%;
-    height: auto;
     .content {
         display: flex;
         flex-flow: wrap;
