@@ -295,7 +295,7 @@ function setDatasetStars(rating: number, dlg: HTMLDialogElement) {
 async function openGameInfo(gameId: number) {
     let info = storage.gameById(gameId)
 
-    console.log("Open Game", gameId)
+    // console.log("Open Game", gameId)
 
     if (headerGame.dataset.owngame === gameId.toString()) {
         gameStarsContainer.classList.add("own-game")

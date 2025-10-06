@@ -109,7 +109,7 @@ async function fetchPlacedGames(): Promise<any> {
     COORD_BY_GAMEID.clear()
     serverGrid.forEach((v, k) => GAMEID_BY_COORD.set(k, v))
     serverGrid.forEach((v, k) => COORD_BY_GAMEID.set(v, k))
-    // console.log("fetchplacedgames", GAMEID_BY_COORD.size)
+    console.log("placed games #", GAMEID_BY_COORD.size)
 
 }
 
@@ -130,7 +130,7 @@ async function setGame(coord: CubeCoord, gameId: number) {
     if (resultGameId === gameId) {
         GAMEID_BY_COORD.set(coordKey, gameId)
         COORD_BY_GAMEID.set(gameId, coordKey)
-        console.log("Post Hex Grid Success!", coord, gameId)
+        // console.log("Post Hex Grid Success!", coord, gameId)
     } else {
         if (resultGameId !== 0) {
             GAMEID_BY_COORD.set(coordKey, resultGameId)
@@ -143,6 +143,9 @@ async function setGame(coord: CubeCoord, gameId: number) {
         if (status == 409) {
             await fetchPlacedGames();
             console.log(status, "Post Hex Grid Failed!", coord, "expected", gameId, "found", "already placed", resultGameId)
+        } else if (status == 403) {
+            console.log(status, "Post Hex Grid Failed!", coord, "out of reach")
+            return -1
         } else {
             console.log(status, "Post Hex Grid Failed!", coord, "expected", gameId, "found", resultGameId)
         }
