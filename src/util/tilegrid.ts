@@ -125,6 +125,22 @@ export class CubeCoord {
             }
         }
     }
+
+    static equals(a: CubeCoord | null | undefined, b: CubeCoord | null | undefined): boolean {
+        if (a === null) {
+            return b === null
+        }
+        if (b === null) {
+            return false
+        }
+        if (a === undefined) {
+            return b !== undefined
+        }
+        if (b === undefined) {
+            return false
+        }
+        return a.q === b.q && a.r === b.r && a.s === b.s
+    }
 }
 
 function shuffleArray<T>(array: T[]) {

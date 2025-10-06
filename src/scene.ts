@@ -6,7 +6,7 @@ import {
     Clock,
     Color,
     ColorRepresentation,
-    DirectionalLight,
+    DirectionalLight, Group,
     Matrix4,
     Mesh,
     MeshLambertMaterial,
@@ -16,7 +16,7 @@ import {
     PlaneGeometry,
     Raycaster,
     RepeatWrapping,
-    Scene,
+    Scene, SpotLight,
     Texture,
     TextureLoader,
     Vector2,
@@ -95,6 +95,9 @@ function isTileObjectData(data: any): data is TileObjectData {
 }
 
 function asTileObjectData(data: Object3D | any): TileObjectData | undefined {
+    if (!data) {
+        return undefined
+    }
     if (data instanceof Object3D) {
         data = data.userData
     }
@@ -334,6 +337,7 @@ function setupCamera(aspect: number, renderer: WebGLRenderer, smoothMover: Smoot
 interface SmoothMoverOptions {
     update?(dt: number): void
     interpolator?(from: number, to: number, t: number): number
+    cancellation?: AbortSignal
 }
 interface SmoothMover {
     update(dt: number): void
@@ -383,6 +387,11 @@ function moveOvertime(): SmoothMover {
         },
         update(dt: number): void {
             for (let [id, state] of movements) {
+                const cancel = state.options?.cancellation
+                if (cancel && cancel.aborted) {
+                    movements.delete(id)
+                    continue
+                }
                 state.time = Math.min(state.duration, state.time + dt)
                 const t = state.time / state.duration
                 const interpolator = state?.options?.interpolator ?? lerp
@@ -406,7 +415,50 @@ function moveOvertime(): SmoothMover {
     }
 }
 
-function setupLight(scene: Scene, camera: Camera): Updater {
+let currentTile: Object3D | undefined = undefined
+
+function setupSelectedTileHighlight(mover: SmoothMover, intensity: number = 1): [Object3D, Updater] {
+    const target = new Object3D()
+    const light = new SpotLight(Color.NAMES.red, intensity)
+    light.translateY(50)
+    light.angle = Math.PI / 4
+    light.target = target
+    light.distance = 0
+
+    const group = new Group()
+    group.add(light, target)
+
+    let previouslySelectedTile: CubeCoord | null = null
+    let cancelLast: AbortController | null = null
+
+    const updater = (): void => {
+        const currentCoord = asTileObjectData(currentTile)?.coord ?? null
+        if (!CubeCoord.equals(previouslySelectedTile, currentCoord)) {
+            if (!currentCoord) {
+                light.intensity = 0
+            } else {
+                if (cancelLast) {
+                    cancelLast.abort()
+                }
+                cancelLast = new AbortController()
+                const options = {
+                    cancellation: cancelLast.signal,
+                    update() {
+                    },
+                }
+                mover.move(group.position, currentCoord?.toWorld(group.position.y, gridSize), 0.1, options).then(() => {
+                    light.intensity = intensity
+                    cancelLast = null
+                })
+            }
+            previouslySelectedTile = currentCoord
+        }
+    }
+
+    return [group, updater]
+}
+
+function setupGlobalLight(scene: Scene, camera: Camera): Updater {
     const directionalLight = new DirectionalLight( Color.NAMES.white, .7);
     directionalLight.position.set(0, 200, 0)
     directionalLight.target = camera
@@ -466,7 +518,6 @@ function setupLight(scene: Scene, camera: Camera): Updater {
     }
 }
 
-let currentTile: Object3D | undefined = undefined
 async function trySelectTile(coord: CubeCoord, tile: Object3D) {
     let gameId = storage.gameAt(coord)
     if (gameId) {
@@ -584,7 +635,9 @@ export function setupScene()
     renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
 
 
-    const updateLight = setupLight(scene, camera)
+    const updateLight = setupGlobalLight(scene, camera)
+    const [selectedTileHighlight, updateSelectedTileHighlight] = setupSelectedTileHighlight(smoothMover, 1000)
+    scene.add(selectedTileHighlight)
 
     const [spawnTiles, enqueueTile, removeQueuedTile, spawnBatch] = tileSpawner(scene, 10)
     TILE_SPAWNER = {enqueueTile, removeQueuedTile, spawnBatch}
@@ -640,6 +693,7 @@ export function setupScene()
         updateLight(dt)
         spawnTiles(dt)
         updateGameSurface(dt)
+        updateSelectedTileHighlight(dt)
 
         raycaster.setFromCamera( pointer, camera );
         camCenterRaycaster.setFromCamera(new Vector2(0,0), camera)
