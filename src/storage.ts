@@ -1,5 +1,5 @@
 import {CubeCoord} from "./util/tilegrid.ts";
-import {Award, fetchHexGrid, fetchJamStats, findGames, GameInfo, GivenAward, JamStats, postHexGridGame, server} from "./server.ts";
+import {Award,  GameInfo, GivenAward, JamStats, server} from "./server.ts";
 import {scene} from "./scene.ts";
 import {TextureLoader} from "three";
 import {getJam} from "./util";
@@ -57,7 +57,7 @@ function nextFreeCoord() {
 
 
 async function init() {
-    JAM_STATS = await fetchJamStats(JAM_NAME)
+    JAM_STATS = await server.fetchJamStats(JAM_NAME)
     await hexGrid()
     await awardMap()
     await allGames();
@@ -66,7 +66,7 @@ async function init() {
 }
 
 async function allGames() {
-    let games = await findGames(JAM_NAME);
+    let games = await server.findGames(JAM_NAME);
     games.forEach(g => GAMES_BY_ID.set(g.id, g));
     console.log(games.length, "games preloaded for LD", JAM_NAME)
 }
@@ -74,7 +74,7 @@ async function allGames() {
 async function hexGrid(): Promise<Map<string, number>> {
     if (HEX_GRID.size === 0) {
         // TODO this never updates atm.
-        let serverGrid = await fetchHexGrid(JAM_NAME)
+        let serverGrid = await server.fetchHexGrid(JAM_NAME)
         serverGrid.forEach((v, k) => HEX_GRID.set(k, v))
         serverGrid.forEach((v, k) => COORD_BY_GAMEID.set(v, k))
         // console.log("Initial HexGrid is:")
@@ -95,7 +95,7 @@ async function awardMap(): Promise<Map<number, GivenAward[]>> {
 }
 
 async function setGame(coord: CubeCoord, gameId: number) {
-    let result = await postHexGridGame(coord, gameId)
+    let result = await server.postHexGridGame(coord, gameId)
     if (result === gameId) {
         HEX_GRID.set(coordToKey(coord), gameId)
         console.log("Post Hex Grid Success!", coord, gameId)

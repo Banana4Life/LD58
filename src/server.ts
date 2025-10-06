@@ -37,7 +37,7 @@ export interface GivenAward {
 }
 
 
-export async function findUserGames(jam: string, username: string): Promise<UserGames> {
+async function findUserGames(jam: string, username: string): Promise<UserGames> {
     if (username === "Guest") {
         return Promise.resolve({current: null, games: []})
     }
@@ -48,7 +48,7 @@ export async function findUserGames(jam: string, username: string): Promise<User
         .then(r => r as UserGames)
 }
 
-export async function findGames(jam: string) {
+async function findGames(jam: string) {
     let url = getBackendUrlFor(`/ld58/games`) + `?jam=${jam}`
     console.log("GET", url)
     return fetch(url)
@@ -56,7 +56,7 @@ export async function findGames(jam: string) {
         .then(r => r as GameInfo[])
 }
 
-export async function fetchHexGrid(jam: string): Promise<Map<string, number>> {
+async function fetchHexGrid(jam: string): Promise<Map<string, number>> {
     let url = getBackendUrlFor(`/ld58/hexGrid`) + `?jam=${jam}`
     console.log("GET", url)
 
@@ -66,7 +66,7 @@ export async function fetchHexGrid(jam: string): Promise<Map<string, number>> {
 
 }
 
-export async function postHexGridGame(coord: CubeCoord, gameId: number): Promise<number> {
+async function postHexGridGame(coord: CubeCoord, gameId: number): Promise<number> {
     let url = getBackendUrlFor(`/ld58/hexGrid`) + `?q=${coord.q}&r=${coord.r}&gameId=${gameId}`
     console.log("POST", url)
     return fetch(url, {
@@ -75,7 +75,7 @@ export async function postHexGridGame(coord: CubeCoord, gameId: number): Promise
     }).then((r) => r.json())
 }
 
-export async function fetchJamStats(jam: string): Promise<JamStats> {
+async function fetchJamStats(jam: string): Promise<JamStats> {
     let url = getBackendUrlFor(`/ld58/stats`) + `?jam=${jam}`
     console.log("GET", url)
     return fetch(url)

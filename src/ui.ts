@@ -1,4 +1,4 @@
-import {findUserGames, server} from "./server.ts";
+import {server} from "./server.ts";
 import {JAM_NAME, storage} from "./storage.ts";
 import fullStar from './assets/full-star.svg';
 import halfStar from './assets/half-star.svg';
@@ -173,7 +173,7 @@ async function updateNamePlate(user: string) {
     console.log("Welcome", user)
     playerNamePlate.querySelector(".player-name")!.textContent = user;
 
-    let game = await findUserGames(JAM_NAME, user)
+    let game = await server.findUserGames(JAM_NAME, user)
     playerNamePlate.querySelector(".game")!.classList.remove("has-game");
 
     if (game.games.length === 0) {
