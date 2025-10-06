@@ -7,7 +7,6 @@ import emptyStar from './assets/empty-star.svg';
 import award2 from './assets/award-2.svg';
 // import award3 from './assets/award-3.svg';
 import certificate from './assets/certificate.svg';
-import logo from './assets/logo.png?url'
 import {scene} from "./scene.ts";
 
 
@@ -246,7 +245,6 @@ async function loadRatedGames() {
 }
 
 async function loadUI() {
-    document.head.querySelector<HTMLLinkElement>('link[rel="icon"]')!.href = logo
     let user = currentUser();
     if (user === null || user === "" || user === "Guest") {
         openUsernameDialog()
