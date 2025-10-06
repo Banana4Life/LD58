@@ -10,6 +10,8 @@ const AWARDS_MAP = new Map<number, GivenAward[]>
 const RATINGS_MAP = new Map<number, number>
 const COORD_BY_GAMEID = new Map<number, string>
 const GAMES_BY_ID = new Map<number, GameInfo>
+const AWARDS_PARTICLE_CD = new Map<number, Map<String, number>>
+
 let JAM_STATS: JamStats | undefined = undefined
 let AWARD_OBJECTS: Award[]
 
@@ -184,6 +186,17 @@ function givenAwards(gameId: number) {
     return awards;
 }
 
+
+function awardsParticleCooldowns(gameId: number) {
+    let cooldowns = AWARDS_PARTICLE_CD.get(gameId);
+    if (!cooldowns) {
+        cooldowns = new Map<string, number>()
+        AWARDS_PARTICLE_CD.set(gameId, cooldowns)
+    }
+    return cooldowns;
+}
+
+
 async function giveAward(gameId: number, user: string, awardKey: string) {
     let awards = givenAwards(gameId)
     let found = awards.find(a => a.byUser === user && a.key === awardKey)
@@ -235,6 +248,7 @@ export let storage = {
     knownPlacedGames: () => GAMEID_BY_COORD,
     gameAt,
     gameById,
+    awardsParticleCooldowns,
     givenAwards,
     giveAward,
     clearUserRatingsCache,

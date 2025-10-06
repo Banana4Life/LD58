@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {BufferGeometry, CanvasTexture, Points} from "three";
+import {BufferGeometry, CanvasTexture, Points, Vector3} from "three";
 
 export class ParticleSpawner {
     private positions: Float32Array;
@@ -32,10 +32,10 @@ export class ParticleSpawner {
         this.scene.add(particles);
     }
 
-    spawn(position: THREE.Vector3) {
+    spawn(position: Vector3) {
         const idx = this.alpha.findIndex(alpha => alpha <= 0);
         if (idx !== -1) {
-            this.lifetimes[idx] = 5;
+            this.lifetimes[idx] = 2;
             this.alpha[idx] = 1;
 
             this.positions[idx * 3] = position.x;
@@ -45,7 +45,7 @@ export class ParticleSpawner {
             this.colors[idx * 4 + 0] = 1;
             this.colors[idx * 4 + 1] = 1;
             this.colors[idx * 4 + 2] = 1;
-            this.colors[idx * 4 + 3] = 1;
+            this.colors[idx * 4 + 3] = 0;
         }
     }
 
@@ -55,9 +55,13 @@ export class ParticleSpawner {
 
             let yPos = idx * 3 + 1;
             this.positions[yPos] += this.speed;
-
+            let alphaIdx = idx * 4 + 3;
+            this.colors[alphaIdx] += dt * 3;
+            if (this.colors[alphaIdx] > 1) {
+                this.colors[alphaIdx] = 1
+            }
             if (this.lifetimes[idx] <= 0) {
-                this.colors[idx * 4 + 3] -= dt * 2;
+                this.colors[alphaIdx] -= dt * 2;
                 this.alpha[idx] -= dt * 2
             }
         }

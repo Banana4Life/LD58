@@ -1,4 +1,4 @@
-interface Vec3 {
+export interface Vec3 {
     x: number
     y: number
     z: number

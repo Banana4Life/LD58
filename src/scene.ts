@@ -26,7 +26,7 @@ import {
 } from "three";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls";
 import {CubeCoord} from "./util/tilegrid.ts";
-import {coordToKey, storage} from "./storage.ts";
+import {coordToKey, keyToCoord, storage} from "./storage.ts";
 import {ui} from "./ui.ts";
 import {Textures} from "./textures.ts";
 import {Sounds} from "./sounds.ts";
@@ -728,8 +728,41 @@ export function setupScene()
 
         }
 
-        for (let [awardKey, pSpawner] of PARTICLE_SPAWNERS) {
-            pSpawner.spawn(new Vector3((Math.random() - 0.5) * 40, 10, (Math.random() - 0.5) * 20));
+        for (let [coord, gameId] of storage.knownPlacedGames()) {
+            let given = storage.givenAwards(gameId)
+            let cooldowns = storage.awardsParticleCooldowns(gameId);
+
+            const givenByKeys = given.reduce((map, current) => {
+                const key = current.key;
+                const count = map.get(key) || 0;
+                map.set(key, count + 1);
+                return map;
+            }, new Map<string, number>());
+
+            givenByKeys.forEach((count, key) => {
+                let cd = cooldowns.get(key) || 0
+                if (cd > 0) {
+                    cooldowns.set(key, cd - count)
+                    return
+                }
+                cooldowns.set(key, 100 + Math.random() * 100);
+
+                let pSpawner = PARTICLE_SPAWNERS.get(key)
+                if (pSpawner) {
+                    let pos = keyToCoord(coord).toWorld(5, gridSize)
+                    let width = 80;
+                    let angle = Math.random() * Math.PI * 2;
+                    let radius = Math.random() * width / 2;
+                    let rPos = new Vector3(pos.x + Math.cos(angle) * radius,
+                        pos.y,
+                        pos.z + Math.sin(angle) * radius)
+
+                    pSpawner.spawn(rPos)
+                }
+            })
+        }
+
+        for (let [_, pSpawner] of PARTICLE_SPAWNERS) {
             pSpawner.update(dt)
         }
 
