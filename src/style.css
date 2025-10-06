@@ -88,6 +88,7 @@ header {
     justify-content: space-between;
 
     #dlg-logo {
+        min-height: 200px;
         height: 200px;
         display: flex;
         img {
@@ -98,6 +99,7 @@ header {
 
 
     #dlg-game {
+        min-height: 200px;
         height: 200px;
 
         .dialog-wrapper {
@@ -116,7 +118,7 @@ header {
                 display: flex;
                 justify-content: center;
                 .stars {
-                    margin: 4px 0;
+                    margin: 3px 0;
                     img {
                         height: 20px;
                     }
@@ -131,7 +133,7 @@ header {
                 flex-direction: column;
                 button {
                     font-size: 18px;
-                    padding: 6px;
+                    padding: 5px;
                 }
             }
         }
