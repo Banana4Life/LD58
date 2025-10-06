@@ -193,7 +193,7 @@ async function updateNamePlate(user: string) {
         if (localStorage.getItem("bells") !== user) {
             openOkDialog(`Does ${randomGame.name} ring a bell? Good.`, () => {
                 localStorage.setItem("bells", user)
-                askEmbedd(game.current)
+                askEmbed(game.current)
             })
         }
 
@@ -216,13 +216,13 @@ async function updateNamePlate(user: string) {
         } else {
             console.log(user, "You have no game")
         }
-
-
     }
+
+    storage.clearUserRatingsCache()
 }
 
 
-function askEmbedd(current: GameInfo | null) {
+function askEmbed(current: GameInfo | null) {
     if (current != null) {
         openOkDialog(`Does your current game ${current.name} support embedding?`, null)
     }

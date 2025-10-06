@@ -163,6 +163,10 @@ function giveAward(gameId: number, user: string, awardKey: string) {
     return count + 1
 }
 
+function clearUserRatingsCache() {
+    RATINGS_MAP.clear()
+}
+
 async function getUserRating(gameId: number, user: string) {
     await getUserRatings(user)
     return RATINGS_MAP.get(gameId) || -1
@@ -196,6 +200,7 @@ export let storage = {
     gameById,
     givenAwards,
     giveAward,
+    clearUserRatingsCache,
     getUserRating,
     getUserRatings,
     setUserRating,
