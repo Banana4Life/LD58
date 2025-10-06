@@ -217,6 +217,8 @@ async function updateNamePlate(user: string) {
     }
 
     storage.clearUserRatingsCache()
+    dlgGames.querySelectorAll<HTMLDivElement>(".game").forEach(game => game.remove())
+    loadRatedGames()
 }
 
 function openOkDialog(textContent: string, cb: (() => void) | null = null) {
@@ -230,20 +232,23 @@ function currentUser() {
     return localStorage.getItem(LOCALSTORAGE_USER) || 'Guest';
 }
 
+async function loadRatedGames() {
+    let ratings = await storage.getUserRatings(currentUser())
+
+    for (let [gameId, rating] of ratings) {
+        let game = storage.gameById(gameId)
+        let starIndex = Math.ceil((rating / 2) - 1);
+        let halfRating = (rating % 2 === 1)
+        appendGame(starIndex, halfRating, game.name, gameId)
+    }
+}
+
 async function loadUI() {
     let user = currentUser();
     if (user === null || user === "" || user === "Guest") {
         openUsernameDialog()
     } else {
         updateNamePlate(user);
-        let ratings = await storage.getUserRatings(currentUser())
-
-        for (let [gameId, rating] of ratings) {
-            let game = storage.gameById(gameId)
-            let starIndex = Math.ceil((rating / 2) - 1);
-            let halfRating = (rating % 2 === 1)
-            appendGame(starIndex, halfRating, game.name)
-        }
     }
 
 }
@@ -367,8 +372,12 @@ function reportBrokenGame() {
 }
 
 async function openRating() {
+    await openSpecificRating(currentGameId())
+}
 
-    const rating = await storage.getUserRating(currentGameId(), currentUser())
+async function openSpecificRating(gameId: number) {
+
+    const rating = await storage.getUserRating(gameId, currentUser())
     setDatasetStars(rating, dlgRating)
     resetStarsToDataSet(dlgRating.dataset, ratingStars)
     dlgRating.showModal()
@@ -377,12 +386,18 @@ async function openRating() {
     }
 }
 
+function appendGame(index: number, half: boolean, name: string, gameId: number) {
+    dlgGames.querySelectorAll<HTMLDivElement>(`.game[data-game-id="${gameId}"]`).forEach(game => game.remove())
 
-function appendGame(index: number, half: boolean, name: string) {
     let clone = document.importNode(dlgGamesTemplate.content, true)
     clone.querySelector(".content")!.textContent = name
     setStars(index, half, clone.querySelectorAll<HTMLImageElement>(".star"))
-    dlgGames.prepend(clone)
+    const gameIdDiv = document.createElement("div")
+    gameIdDiv.classList.add("game")
+    gameIdDiv.dataset.gameId = gameId.toString()
+    gameIdDiv.appendChild(clone)
+    dlgGames.prepend(gameIdDiv)
+    gameIdDiv.addEventListener("click",  () => openGameInfo(gameId).then(() => openSpecificRating(gameId)))
 }
 
 async function submitRating() {
@@ -397,7 +412,7 @@ async function submitRating() {
     let rating = await server.fetchGameRating(gameId)
     setDatasetStars(rating, dlgGame);
     resetStarsToDataSet(dlgGame.dataset, gameStars)
-    appendGame(index, half, dlgGame.querySelector(".content")!.textContent);
+    appendGame(index, half, dlgGame.querySelector(".content")!.textContent, gameId);
 }
 
 

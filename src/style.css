@@ -119,7 +119,7 @@ header {
             justify-content: center;
         }
 
-        overflow: scroll;
+        overflow: auto;
     }
 
 }
