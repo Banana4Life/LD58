@@ -121,19 +121,18 @@ export class ParticleSpawner {
     createTextParticle(geometry: BufferGeometry, icon: string) {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d")!;
-        canvas.width = 50
-        canvas.height = 50
+        canvas.width = 70
+        canvas.height = 60
         ctx.font = "50px Arial" ;
         ctx.textBaseline = "top";
         ctx.fillStyle = "black";
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillText(icon, 0, 0);
+        ctx.fillText(icon, 5, 5);
         let texture = new CanvasTexture(canvas)
 
-        // === MATERIAL ===
         const material = new THREE.PointsMaterial({
             map: texture,
-            size: 4,
+            size: 15,
             vertexColors: true,
             transparent: true,
             alphaTest: 0.5,
