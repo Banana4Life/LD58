@@ -19,6 +19,7 @@ import {
     Scene, SpotLight,
     Texture,
     TextureLoader,
+    TOUCH,
     Vector2,
     Vector3,
     Vector3Like,
@@ -339,6 +340,7 @@ function setupCamera(aspect: number, renderer: WebGLRenderer, smoothMover: Smoot
     orbitControls.maxPolarAngle = orbitControls.minPolarAngle
     orbitControls.minDistance = 100
     orbitControls.maxDistance = 200
+    orbitControls.touches.ONE = TOUCH.PAN
     orbitControls.listenToKeyEvents(window)
     orbitControls.update()
 
