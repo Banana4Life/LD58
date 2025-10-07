@@ -8,8 +8,7 @@ import {
     ColorRepresentation,
     DirectionalLight, Group,
     Matrix4,
-    Mesh,
-    MeshLambertMaterial,
+    Mesh, MeshLambertMaterial,
     MeshPhongMaterial,
     Object3D,
     PerspectiveCamera, Plane,
@@ -34,10 +33,13 @@ import {Sounds} from "./sounds.ts";
 import {PCFSoftShadowMap} from "three/src/constants";
 import {lerp} from "three/src/math/MathUtils";
 import {ParticleSpawner} from "./particleSpawner.ts";
+import {getMaxZoom} from "./util";
 
 const TEXTURE_LOADER = new TextureLoader()
 const FALL_START_HEIGHT = 100
 const SELECTED_HEIGHT = 10
+const MIN_DISTANCE = 100;
+const MAX_DISTANCE = Math.max(Math.min(getMaxZoom() || 300, 600), 300);
 
 function getSize(obj: Object3D): Vector3 {
     const bounds = new Box3().setFromObject(obj)
@@ -295,7 +297,7 @@ function gameSurface(scene: Scene, camera: Camera): Updater {
     backgroundTexture.wrapS = RepeatWrapping;
     backgroundTexture.wrapT = RepeatWrapping;
     backgroundTexture.repeat.set(100, 100);
-    const backgroundPlane = new PlaneGeometry(window.innerWidth, window.innerHeight)
+    const backgroundPlane = new PlaneGeometry(window.innerWidth * 2, window.innerHeight * 2)
     const backgroundPlaneMaterial = new MeshPhongMaterial({
         map: backgroundTexture,
         color: new Color(0xFF0000),
@@ -327,7 +329,7 @@ function gameSurface(scene: Scene, camera: Camera): Updater {
 let orbitControls: (target: Vector3Like) => void
 
 function setupCamera(aspect: number, renderer: WebGLRenderer, smoothMover: SmoothMover): [PerspectiveCamera, (target: Vector3Like, duration: number) => Promise<void>] {
-    const camera = new PerspectiveCamera(80, aspect, 0.1, 1000);
+    const camera = new PerspectiveCamera(80, aspect, 0.1, 2 * MAX_DISTANCE);
     camera.translateY(100)
 
     const orbitControls = new OrbitControls(camera, renderer.domElement);
@@ -338,8 +340,8 @@ function setupCamera(aspect: number, renderer: WebGLRenderer, smoothMover: Smoot
     orbitControls.maxAzimuthAngle = 0
     orbitControls.minPolarAngle = Math.PI / 10
     orbitControls.maxPolarAngle = orbitControls.minPolarAngle
-    orbitControls.minDistance = 100
-    orbitControls.maxDistance = 200
+    orbitControls.minDistance = MIN_DISTANCE
+    orbitControls.maxDistance = MAX_DISTANCE
     orbitControls.touches.ONE = TOUCH.PAN
     orbitControls.listenToKeyEvents(window)
     orbitControls.update()
@@ -643,9 +645,11 @@ export function setupScene()
 
     const canvas = document.querySelector<HTMLCanvasElement>('#main-canvas')!
     const pointer = new Vector2()
+
     document.addEventListener('mousemove', e => {
-        pointer.x = ( e.clientX / canvas.width ) * 2 - 1;
-        pointer.y = - ( e.clientY /  canvas.height ) * 2 + 1;
+        let rect = renderer.domElement.getBoundingClientRect()
+        pointer.x = ( (e.clientX - rect.left) / rect.width ) * 2 - 1;
+        pointer.y = - ( (e.clientY - rect.top) /  rect.height ) * 2 + 1;
     })
 
     const renderer = new WebGLRenderer({

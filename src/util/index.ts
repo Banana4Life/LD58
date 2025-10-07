@@ -10,6 +10,14 @@ export function getBackendUrl(): URL {
     return new URL(defaultBackendUrl)
 }
 
+export function getMaxZoom(): number | undefined {
+    let max = currentUrl.searchParams.get("max-zoom");
+    if (max == null) {
+        return undefined;
+    }
+    return parseInt(max)
+}
+
 export function getBackendUrlFor(path: string): URL {
     const backendUrl = getBackendUrl()
     const prefix = backendUrl.pathname.replace(/\/$/, '')
