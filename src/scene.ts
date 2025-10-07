@@ -297,7 +297,7 @@ function gameSurface(scene: Scene, camera: Camera): Updater {
     backgroundTexture.wrapS = RepeatWrapping;
     backgroundTexture.wrapT = RepeatWrapping;
     backgroundTexture.repeat.set(100, 100);
-    const backgroundPlane = new PlaneGeometry(window.innerWidth * 2, window.innerHeight * 2)
+    const backgroundPlane = new PlaneGeometry(window.innerWidth * 3, window.innerHeight * 3)
     const backgroundPlaneMaterial = new MeshPhongMaterial({
         map: backgroundTexture,
         color: new Color(0xFF0000),
