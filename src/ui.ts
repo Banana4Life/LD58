@@ -338,12 +338,12 @@ function appendTopAwardGame(gameId: number, awardCount: number) {
     gameIdDiv.addEventListener("click",  () => scene.selectTileByGameId(gameId))
 }
 
-function openRatingRanking() {
+async function openRatingRanking() {
     dlgRatingRanking.querySelectorAll<HTMLDivElement>(`.rating-ranking`).forEach(game => game.remove())
 
     const topRatings = storage.topRatings();
-    for (let {gameId, stars} of topRatings) {
-        appendTopRatingGame(gameId, stars)
+    for (let [gameId, rating] of await topRatings) {
+        appendTopRatingGame(gameId, rating)
     }
     dlgRatingRanking.showModal()
 }

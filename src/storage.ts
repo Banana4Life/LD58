@@ -197,19 +197,12 @@ function topAwards(): {gameId: number, awardCount: number}[] {
         .slice(0, 10);
 }
 
-function topRatings(): {gameId: number, stars: number}[] {
-    return Array.from(RATINGS_MAP.entries())
-        .map(([gameId, stars]) => ({
-            gameId,
-            stars
-        }))
-        .sort((a, b) => b.stars - a.stars)
-        .slice(0, 10);
+async function topRatings(): Promise<[number, number][]> {
+    return await server.fetchTopRatings(JAM_NAME);
 }
 
 function givenAwards(gameId: number) {
-    let awards = AWARDS_MAP.get(gameId) || []
-    return awards;
+    return AWARDS_MAP.get(gameId) || [];
 }
 
 
@@ -255,7 +248,6 @@ async function getUserRatings(user: string) {
 
     return RATINGS_MAP;
 }
-
 
 async function setUserRating(gameId: number, user: string, rating: number) {
     if (await server.postRating(gameId, user, rating)) {

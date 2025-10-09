@@ -129,6 +129,14 @@ async function fetchGameRating(gameId: number){
         .then(r => r as number)
 }
 
+async function fetchTopRatings(jam: string){
+    let url = getBackendUrlFor(`/ld58/topRatings`) + `?jam=${jam}`
+    debug("GET", url)
+    return fetch(url)
+        .then(r => r.json())
+        .then(r => r as [number, number][])
+}
+
 async function postRating(gameId: number, user: string, rating: number){
     let url = getBackendUrlFor(`/ld58/rate`) + `?gameId=${gameId}&user=${user}&rating=${rating}`
     debug("POST", url)
@@ -149,5 +157,6 @@ export let server = {
     postAward,
     fetchUserRatings,
     fetchGameRating,
+    fetchTopRatings,
     postRating,
 } as const
