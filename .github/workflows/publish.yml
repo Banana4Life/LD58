@@ -46,13 +46,13 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
-          name: 'github-pages-latest'
+          name: 'github-pages'
 
   deploy:
     name: Deploy
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: ${{ startsWith(github.ref, 'refs/tags/') && join('github-pages-tag-', github.ref_name) || 'github-pages' }}
+      url: ${{ startsWith(github.ref, 'refs/tags/') && join(steps.deployment.outputs.page_url, join('/', github.ref_name)) || steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -60,4 +60,4 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
         with:
-          artifact_name: 'github-pages-latest'
+          artifact_name: 'github-pages'
