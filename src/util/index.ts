@@ -18,9 +18,14 @@ export function getMaxZoom(): number | undefined {
     return parseInt(max)
 }
 
-export function getBackendUrlFor(path: string): URL {
+export function getBackendUrlFor(path: string, queryParams?: [string, string | number][]): URL {
     const backendUrl = getBackendUrl()
     const prefix = backendUrl.pathname.replace(/\/$/, '')
+    if (queryParams) {
+        for (let [parameter, value] of queryParams) {
+            backendUrl.searchParams.append(parameter, `${value}`)
+        }
+    }
     backendUrl.pathname = prefix + path
     return backendUrl
 }
